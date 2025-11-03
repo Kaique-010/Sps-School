@@ -1,8 +1,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Permissão de internet necessária para chamadas HTTP/HTTPS -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:label="SPS School"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
+        <!-- Permitir tráfego cleartext (HTTP) se o backend não usar HTTPS -->
+        <uses-library android:name="org.apache.http.legacy" android:required="false" />
+        
+        <!-- Em Android 9+ (API 28), liberar cleartext pode ser necessário -->
+        <!-- Nota: alternativa é configurar networkSecurityConfig -->
+        
+        <!-- Atributo em application para liberar cleartext -->
+        <!-- Adicionado via tools ou diretamente -->
+    
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -30,6 +44,9 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        
+        <!-- Permite cleartext traffic para o app inteiro -->
+        <meta-data android:name="android.app.cleartextTrafficPermitted" android:value="true" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
