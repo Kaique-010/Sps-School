@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/modulo_service.dart';
+import 'package:spsschool/config/backend.dart';
 
 class DynamicDrawerWidget extends StatefulWidget {
   const DynamicDrawerWidget({super.key});
@@ -9,7 +10,7 @@ class DynamicDrawerWidget extends StatefulWidget {
 }
 
 class _DynamicDrawerWidgetState extends State<DynamicDrawerWidget> {
-  final ModuloService _moduloService = ModuloService(baseUrl: 'http://localhost:8000');
+  final ModuloService _moduloService = ModuloService(baseUrl: Backend.baseUrl);
   List<dynamic> _modulos = [];
   bool _isLoading = true;
   String? _error;

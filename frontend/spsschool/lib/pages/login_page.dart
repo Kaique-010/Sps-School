@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import 'package:spsschool/config/backend.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
@@ -14,7 +15,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   final TextEditingController _password = TextEditingController();
   bool _loading = false;
 
-  final ApiService api = ApiService(baseUrl: 'http://localhost:8000');
+  final ApiService api = ApiService(baseUrl: Backend.baseUrl);
 
   // controllers de animação
   late AnimationController _logoController;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/modulo_service.dart';
+import 'package:spsschool/config/backend.dart';
 import 'video_page.dart';
 
 class TreinamentosPage extends StatelessWidget {
@@ -8,7 +9,7 @@ class TreinamentosPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final service = ModuloService(baseUrl: 'http://localhost:8000');
+    final service = ModuloService(baseUrl: Backend.baseUrl);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Treinamentos')),
