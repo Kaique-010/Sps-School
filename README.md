@@ -74,3 +74,64 @@ scaffold(
     child: Text('Bem-vindo à Academia Spartacus!'),
   ),
 );
+
+
+
+Resumo do app
+
+Configuração de rota com a api Backend em django para o base em lib/config/backend.dart
+
+dessa maneira todas as rotas do app serão prefixadas com /api e serão acessíveis através de http://localhost:8000/api/ ou através do site http://www.sps-training.site/api/
+
+as paginas do app são criadas em lib/pages/
+
+temos as seguintes paginas:
+
+home_page.dart:
+
+constando a página principal do aplicativo onde :
+
+temos um drawer lateral com a sopções de direcionamento para os manuais de cada módulo
+
+a página de login 
+
+de treinamentos que funciona dinamicamente, com base na lista de treinamentos retornada pela api.
+Nela constam o id, o nome do treinamento, o conteúdo, a duração e o link para o video.
+
+e a de video que contém os videos de cada treinamento, também dinâmica, com base na lista de videos retornada pela api.
+
+
+
+Em lib/routes temos as seguintes rotas:
+
+app_routes.dart:
+
+const String loginRoute = '/login';
+const String homeRoute = '/home';
+const String perfilRoute = '/perfil';
+const String treinamentosRoute = '/treinamentos';
+const String videoRoute = '/video';
+
+cada uma delas é usada para direcionar para a respectiva página.
+
+se for acrescentar mais rotas, basta adicionar no arquivo app_routes.dart e no arquivo app_pages.dart
+
+em Services temos os seguintes arquivos:
+
+
+api_service.dart:
+
+contém as funções de comunicação com a api, como a requisição de treinamentos e videos.
+
+para realizar o login e obter o token de acesso, usamos a função login()
+
+
+e em libs/widgets/ temos os seguintes widgets:
+
+custom_drawer.dart:
+
+contém o drawer lateral com as opções de direcionamento para os manuais de cada módulo
+
+e o main_drawer.dart:
+
+Que funciona como App.json, contém o drawer principal
