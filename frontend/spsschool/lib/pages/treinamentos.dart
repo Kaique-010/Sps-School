@@ -34,6 +34,7 @@ class TreinamentosPage extends StatelessWidget {
                       builder: (_) => VideoPage(
                         videoUrl: t['video_url'],
                         treinamentoId: t['id'],
+                        treinamentoConteudo: t['conteudo'],
                       ),
                     ),
                   );

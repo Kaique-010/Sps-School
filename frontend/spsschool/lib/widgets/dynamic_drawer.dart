@@ -428,6 +428,7 @@ class _DynamicDrawerWidgetState extends State<DynamicDrawerWidget> {
             arguments: {
               'videoUrl': treinamento['video_url'] ?? '',
               'treinamentoId': treinamento['id'],
+              'treinamentoConteudo': treinamento['conteudo'],
             },
           );
         },

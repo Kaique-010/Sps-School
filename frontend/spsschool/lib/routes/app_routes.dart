@@ -21,6 +21,7 @@ class AppRoutes {
           builder: (_) => VideoPage(
             videoUrl: args['videoUrl'] as String,
             treinamentoId: args['treinamentoId'] as int,
+            treinamentoConteudo: args['treinamentoConteudo'] as String?,
           ),
         );
       default:

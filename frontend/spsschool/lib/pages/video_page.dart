@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:spsschool/config/backend.dart';
 
 // Import condicional para Web
 import '../utils/web_utils.dart' if (dart.library.io) '../utils/mobile_utils.dart';
@@ -7,11 +11,13 @@ import '../utils/web_utils.dart' if (dart.library.io) '../utils/mobile_utils.dar
 class VideoPage extends StatefulWidget {
   final String videoUrl;
   final int treinamentoId;
+  final String? treinamentoConteudo;
 
   const VideoPage({
     super.key,
     required this.videoUrl,
     required this.treinamentoId,
+    this.treinamentoConteudo,
   });
 
   @override
@@ -21,6 +27,8 @@ class VideoPage extends StatefulWidget {
 class _VideoPageState extends State<VideoPage> {
   bool _isPlayerReady = false;
   String? _videoId;
+  YoutubePlayerController? _ytController;
+  String? _conteudo;
 
   @override
   void initState() {
@@ -33,6 +41,17 @@ class _VideoPageState extends State<VideoPage> {
     _videoId = _extractVideoId(widget.videoUrl);
     
     if (_videoId != null) {
+      if (!kIsWeb) {
+        _ytController = YoutubePlayerController(
+          initialVideoId: _videoId!,
+          flags: const YoutubePlayerFlags(
+            autoPlay: false,
+            mute: false,
+            enableCaption: true,
+            controlsVisibleAtStart: true,
+          ),
+        );
+      }
       setState(() {
         _isPlayerReady = true;
       });
@@ -53,6 +72,7 @@ class _VideoPageState extends State<VideoPage> {
 
   @override
   void dispose() {
+    _ytController?.dispose();
     super.dispose();
   }
 
@@ -130,6 +150,54 @@ class _VideoPageState extends State<VideoPage> {
                               const SnackBar(
                                 content: Text('Use os controles do player para navegar'),
                                 backgroundColor: Color(0xFFFFA601),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Conteúdo do treinamento
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2A2C2B),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Conteúdo',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        FutureBuilder<void>(
+                          future: _ensureConteudoLoaded(),
+                          builder: (context, snapshot) {
+                            if (_conteudo == null && snapshot.connectionState != ConnectionState.done) {
+                              return Text(
+                                'Carregando conteúdo...',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 14,
+                                ),
+                              );
+                            }
+                            final texto = _conteudo ?? 'Sem conteúdo disponível';
+                            return Text(
+                              texto,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
                               ),
                             );
                           },
@@ -256,52 +324,26 @@ class _VideoPageState extends State<VideoPage> {
   }
 
   Widget _buildMobileYouTubePlayer() {
-    // Para Android/iOS - implementação simples com link para o YouTube
-    return Container(
-      color: Colors.black,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.play_circle_outline,
-            color: Colors.white,
-            size: 80,
+    if (_ytController == null) {
+      return Container(
+        color: Colors.black,
+        child: const Center(
+          child: Text(
+            'Player indisponível',
+            style: TextStyle(color: Colors.white),
           ),
-          const SizedBox(height: 20),
-          const Text(
-            'Vídeo do YouTube',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Toque para abrir no YouTube',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton.icon(
-            onPressed: () {
-              // TODO: Implementar abertura do YouTube app ou browser
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Funcionalidade será implementada em breve'),
-                ),
-              );
-            },
-            icon: const Icon(Icons.open_in_new),
-            label: const Text('Abrir no YouTube'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFA601),
-              foregroundColor: Colors.black,
-            ),
-          ),
-        ],
+        ),
+      );
+    }
+    return YoutubePlayer(
+      controller: _ytController!,
+      showVideoProgressIndicator: true,
+      progressIndicatorColor: const Color(0xFFFFA601),
+      progressColors: const ProgressBarColors(
+        playedColor: Color(0xFFFFA601),
+        handleColor: Color(0xFFFFA601),
+        backgroundColor: Colors.white24,
+        bufferedColor: Colors.white38,
       ),
     );
   }
@@ -327,5 +369,32 @@ class _VideoPageState extends State<VideoPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _ensureConteudoLoaded() async {
+    // Se já temos conteúdo vindo da navegação, usa-o e não carrega de novo
+    if (_conteudo != null) return;
+    if (widget.treinamentoConteudo != null && widget.treinamentoConteudo!.isNotEmpty) {
+      setState(() {
+        _conteudo = widget.treinamentoConteudo;
+      });
+      return;
+    }
+    // Caso contrário, busca do backend pelo ID
+    try {
+      final url = Uri.parse('${Backend.baseUrl}/api/treinamentos/treinamentos/${widget.treinamentoId}/');
+      final res = await http.get(url);
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        setState(() {
+          _conteudo = (data['conteudo'] as String?) ?? '';
+        });
+      }
+    } catch (_) {
+      // Silencia erros de rede, mostra conteúdo vazio
+      setState(() {
+        _conteudo = _conteudo ?? '';
+      });
+    }
   }
 }
