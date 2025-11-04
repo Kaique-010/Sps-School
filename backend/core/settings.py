@@ -104,9 +104,7 @@ USE_I18N = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -204,3 +202,12 @@ SPECTACULAR_SETTINGS = {
         'ClientEnum': 'core.utils.ClientEnum',
     },
 }
+
+
+CSRF_TRUSTED_ORIGINS = ["https://sps-training.site", "https://www.sps-training.site"]
+ALLOWED_HOSTS = ["sps-training.site", "www.sps-training.site"]
+
+CORS_ALLOW_CREDENTIALS = True
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+
