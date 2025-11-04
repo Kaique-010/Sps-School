@@ -17,8 +17,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
+from autenticacao.views import LoginTemplateView, HomeView, LogoutTemplateView
 
 urlpatterns = [
+    path('', LoginTemplateView.as_view(), name='login'),
+    path('home/', HomeView.as_view(), name='home'),
+    path('logout/', LogoutTemplateView.as_view(), name='logout'),
     path('admin/', admin.site.urls),
     path('api/auth/', include('autenticacao.urls')),
     path('api/treinamentos/', include('central_treinamentos.urls')),

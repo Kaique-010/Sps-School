@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}Treinamentos - {{ modulo.nome }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mt-4 mb-3">Treinamentos de {{ modulo.nome }}</h2>
+            {% if modulo.descricao %}
+            <p class="text-muted">{{ modulo.descricao }}</p>
+            {% endif %}
+        </div>
+
+        {% if treinamentos %}
+            {% for t in treinamentos %}
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ t.titulo }}</h5>
+                        <p class="card-text">{{ t.conteudo|default:"Sem conteúdo" }}</p>
+                        <a href="{% url 'video_page' t.id %}" class="btn btn-outline-primary">
+                            <i class="bi bi-play-circle me-1"></i>Assistir vídeo
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-info">Nenhum treinamento disponível para este módulo.</div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

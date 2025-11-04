@@ -5,7 +5,10 @@ from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
+from django.views import View
+from django.shortcuts import redirect, render
 from .serializers import LoginSerializer, UsuarioSerializer, UsuarioPerfilSerializer
+from central_treinamentos.models import Modulo, Treinamento, ProgressoTreinamento
 
 
 class LoginView(APIView):
@@ -50,6 +53,51 @@ class LoginView(APIView):
             'erros': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
+
+class LoginTemplateView(View):
+    success_url = 'home.html'
+    """
+    View para renderizar o template de login (UI) na raiz
+    """
+    def get(self, request):
+        return render(request, 'login.html')
+
+class LogoutTemplateView(View):
+    success_url = 'login.html'
+    """
+    View para renderizar o template de logout (UI)
+    """
+    def get(self, request):
+        return render(request, 'login.html')
+
+class HomeView(View):
+    """
+    View para renderizar o template de home (UI)
+    """
+    def get(self, request):
+        # Contagens gerais
+        total_modulos = Modulo.objects.count()
+        total_treinamentos = Treinamento.objects.count()
+
+        # Progresso do usuário
+        completed_treinamentos = 0
+        total_certificates = 0
+        if request.user.is_authenticated:
+            completed_treinamentos = ProgressoTreinamento.objects.filter(
+                usuario=request.user, lido=True
+            ).count()
+            # Sem model específico de certificados, usar concluídos como proxy
+            total_certificates = completed_treinamentos
+
+        context = {
+            'modulos': Modulo.objects.prefetch_related('treinamentos').all(),
+            'total_modulos': total_modulos,
+            'total_treinamentos': total_treinamentos,
+            'completed_treinamentos': completed_treinamentos,
+            'total_certificates': total_certificates,
+        }
+
+        return render(request, 'home.html', context)
 
 class PerfilUsuarioView(RetrieveUpdateAPIView):
     """

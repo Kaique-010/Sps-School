@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Vídeo - {{ treinamento.titulo }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12 col-lg-8">
+            <div class="video-container mb-3">
+                {% if embed_type == 'file' and embed_url %}
+                    <video controls style="width:100%; max-height:480px; background:black;" src="{{ embed_url }}"></video>
+                {% elif embed_url %}
+                    <iframe
+                        src="{{ embed_url }}"
+                        style="width:100%; height:480px; border:0;"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        referrerpolicy="strict-origin-when-cross-origin"
+                        allowfullscreen>
+                    </iframe>
+                {% else %}
+                    <div class="alert alert-warning">Nenhum vídeo disponível para este treinamento.</div>
+                {% endif %}
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">{{ treinamento.titulo }}</h4>
+                    <p class="card-text">{{ conteudo|default:"Sem conteúdo." }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

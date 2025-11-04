@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+    <title>Home</title>
+</head>
+<body>
+    <div class="container">
+     
+    <h1 class="text-center" style="margin-top: 20px;"> <img src="{% static 'logo.png' %}" alt="Logo" style="width: 50px; height: 50px;">   Bem-vindo à Home {{ user.username }}</h1>
+    <div class="container">
+         <!-- Features Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="text-center mb-5">Recursos da Plataforma</h2>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="bi bi-play-circle-fill text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="card-title">Vídeos Interativos</h5>
+                    <p class="card-text">
+                        Player integrado com YouTube, controle de progresso automático 
+                        e marcação de conclusão de vídeos.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="bi bi-collection-fill text-success" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="card-title">Módulos Organizados</h5>
+                    <p class="card-text">
+                        Estrutura hierárquica de módulos e treinamentos para 
+                        uma experiência de aprendizado organizada.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="bi bi-award-fill text-warning" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="card-title">Certificações</h5>
+                    <p class="card-text">
+                        Certificados automáticos ao completar treinamentos, 
+                        com controle de progresso e validação.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    </div>
+     {% if user.is_authenticated %}
+    <div class="row mb-5">
+        <div class="col-12">
+            <h3 class="mb-4">Seu Progresso</h3>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card border-0">
+                <div class="card-body text-center">
+                    <i class="bi bi-collection display-6 mb-2"></i>
+                    <h4 class="card-title">{{ total_modulos|default:0 }}</h4>
+                    <p class="card-text">Módulos Disponíveis</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card border-0">
+                <div class="card-body text-center">
+                    <i class="bi bi-play-circle display-6 mb-2"></i>
+                    <h4 class="card-title">{{ total_treinamentos|default:0 }}</h4>
+                    <p class="card-text">Treinamentos</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card border-0">
+                <div class="card-body text-center">
+                    <i class="bi bi-check-circle display-6 mb-2"></i>
+                    <h4 class="card-title">{{ completed_treinamentos|default:0 }}</h4>
+                    <p class="card-text">Concluídos</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card border-0">
+                <div class="card-body text-center">
+                    <i class="bi bi-award display-6 mb-2"></i>
+                    <h4 class="card-title">{{ total_certificates|default:0 }}</h4>
+                    <p class="card-text">Certificados</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</body>
+</html>
+{% endblock %}

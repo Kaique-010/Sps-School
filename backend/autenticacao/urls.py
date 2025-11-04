@@ -4,14 +4,18 @@ from .views import (
     LoginView,
     PerfilUsuarioView,
     LogoutView,
-    VerificarTokenView
+    VerificarTokenView,
+    HomeView,
+    LogoutTemplateView
 )
 
 app_name = 'autenticacao'
 
 urlpatterns = [
     # Autenticação
-    path('login/', LoginView.as_view(), name='login'),
+    path('', LoginView.as_view(), name='login'),
+    path('logout/', LogoutTemplateView.as_view(), name='logout'),
+    path('home/', HomeView.as_view(), name='home'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('verificar-token/', VerificarTokenView.as_view(), name='verificar_token'),
