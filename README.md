@@ -135,3 +135,35 @@ contém o drawer lateral com as opções de direcionamento para os manuais de ca
 e o main_drawer.dart:
 
 Que funciona como App.json, contém o drawer principal
+
+
+
+Paa finalizar o app, é necessário configurar o arquivo pubspec.yaml para adicionar as fontes e as imagens usadas no app.
+
+Deploy (Android e iOS)
+
+Android (Windows/macOS/Linux):
+- Gere APK release: `flutter build apk --release --dart-define=BASE_URL=https://www.sps-training.site`
+- Opcional: App Bundle para Play Store: `flutter build appbundle --release --dart-define=BASE_URL=https://www.sps-training.site`
+
+iOS (somente macOS, com Xcode):
+- Pré-requisitos: Xcode instalado, conta de desenvolvedor, CocoaPods (`sudo gem install cocoapods`), executar `pod install` dentro do diretório `ios/`.
+- Abra `ios/Runner.xcworkspace` e configure em Signing & Capabilities:
+  - `Team` (time de desenvolvimento)
+  - `Bundle Identifier`
+  - `Deployment Target` adequado
+- Se usar HTTP em desenvolvimento, ajuste o `Info.plist` para permitir carregamentos (ATS). Exemplo:
+  ```xml
+  <key>NSAppTransportSecurity</key>
+  <dict>
+    <key>NSAllowsArbitraryLoads</key>
+    <true/>
+  </dict>
+  ```
+  Em produção, prefira `https` e remova a exceção.
+- Build para distribuição (IPA):
+  - `flutter build ipa --release --dart-define=BASE_URL=https://www.sps-training.site`
+  - Alternativamente, `flutter build ios --release` (gera o app e requer assinatura via Xcode para exportar IPA).
+
+Observação: em Windows/Linux não é possível gerar iOS diretamente; use um Mac com Xcode para os comandos acima.
+
