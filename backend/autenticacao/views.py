@@ -5,6 +5,7 @@ from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login
 from django.views import View
 from django.shortcuts import redirect, render
 from .serializers import LoginSerializer, UsuarioSerializer, UsuarioPerfilSerializer
@@ -98,6 +99,35 @@ class HomeView(View):
         }
 
         return render(request, 'home.html', context)
+
+class SessionLoginView(APIView):
+    """
+    Autenticação baseada em sessão para a interface web.
+    Cria a sessão do usuário (cookie) para que `request.user.is_authenticated` funcione nos templates.
+    """
+    def post(self, request):
+        data = request.data
+        username = data.get('username')
+        password = data.get('password')
+
+        if not username or not password:
+            return Response({
+                'sucesso': False,
+                'mensagem': 'Informe usuário e senha.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        user = authenticate(request, username=username, password=password)
+        if user is None:
+            return Response({
+                'sucesso': False,
+                'mensagem': 'Credenciais inválidas.'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+        login(request, user)
+        return Response({
+            'sucesso': True,
+            'mensagem': 'Login de sessão realizado com sucesso.'
+        }, status=status.HTTP_200_OK)
 
 class PerfilUsuarioView(RetrieveUpdateAPIView):
     """

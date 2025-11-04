@@ -204,8 +204,8 @@ SPECTACULAR_SETTINGS = {
 }
 
 
-CSRF_TRUSTED_ORIGINS = ["https://sps-training.site", "https://www.sps-training.site"]
-ALLOWED_HOSTS = ["sps-training.site", "www.sps-training.site"]
+CSRF_TRUSTED_ORIGINS = ["https://sps-training.site", "https://www.sps-training.site", "http://localhost:8000", "http://127.0.0.1:8000"]
+ALLOWED_HOSTS = ["sps-training.site", "www.sps-training.site", "localhost", "127.0.0.1"]
 
 CORS_ALLOW_CREDENTIALS = True
 CSRF_COOKIE_SECURE = True

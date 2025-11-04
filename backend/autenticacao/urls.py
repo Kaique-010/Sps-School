@@ -5,17 +5,20 @@ from .views import (
     PerfilUsuarioView,
     LogoutView,
     VerificarTokenView,
-    HomeView,
-    LogoutTemplateView
+    SessionLoginView,
 )
 
 app_name = 'autenticacao'
 
 urlpatterns = [
-    # Autenticação
+    # Autenticação JWT (API) - compatível com clientes existentes
     path('', LoginView.as_view(), name='login'),
-    path('logout/', LogoutTemplateView.as_view(), name='logout'),
-    path('home/', HomeView.as_view(), name='home'),
+    path('login/', LoginView.as_view(), name='login_api'),
+    
+    # Autenticação de sessão para templates web
+    path('session-login/', SessionLoginView.as_view(), name='session_login'),
+
+    # Logout via API
     path('logout/', LogoutView.as_view(), name='logout'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('verificar-token/', VerificarTokenView.as_view(), name='verificar_token'),

@@ -77,25 +77,39 @@
         }
 
         try {
-          const resp = await fetch('/api/auth/', {
+          // 1) Login de sessão para templates web
+          const sessionResp = await fetch('/api/auth/session-login/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
           });
 
-          const data = await resp.json();
-          if (resp.ok && data?.sucesso) {
-            const { access, refresh } = data.dados?.tokens || {};
-            localStorage.setItem('sps_access_token', access || '');
-            localStorage.setItem('sps_refresh_token', refresh || '');
-            showAlert('Login realizado com sucesso. Redirecionando...', 'success');
-            setTimeout(() => {
-              window.location.href = '/home/';
-            }, 800);
-          } else {
-            const mensagem = data?.mensagem || 'Falha na autenticação';
+          const sessionData = await sessionResp.json();
+          if (!sessionResp.ok || !sessionData?.sucesso) {
+            const mensagem = sessionData?.mensagem || 'Falha na autenticação';
             showAlert(mensagem, 'danger');
+            return;
           }
+
+          // 2) Opcional: obter tokens JWT (para futuras chamadas via JS)
+          try {
+            const jwtResp = await fetch('/api/auth/login/', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username, password })
+            });
+            const jwtData = await jwtResp.json();
+            if (jwtResp.ok && jwtData?.sucesso) {
+              const { access, refresh } = jwtData.dados?.tokens || {};
+              localStorage.setItem('sps_access_token', access || '');
+              localStorage.setItem('sps_refresh_token', refresh || '');
+            }
+          } catch {}
+
+          showAlert('Login realizado com sucesso. Redirecionando...', 'success');
+          setTimeout(() => {
+            window.location.href = '/home/';
+          }, 600);
         } catch (err) {
           console.error(err);
           showAlert('Erro de conexão com o servidor.', 'danger');
