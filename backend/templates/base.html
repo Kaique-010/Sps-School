@@ -248,12 +248,17 @@
                 <img src="{% static 'logo.png' %}" alt="Logo" width="40" height="40" class="me-2">
                 SPS Training
             </a>
+            <!-- Botão único para abrir sidebar e navbar no mobile -->
+            <button class="btn btn-outline-primary d-md-none me-2" type="button" onclick="toggleMenus()" aria-label="Alternar menus">
+                <i class="bi bi-list"></i>
+            </button>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <!-- Oculta o toggler padrão para evitar duplicidade -->
+            <button class="navbar-toggler d-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             
-            <div class="collapse navbar-collapse" id="navbarNav">
+            <div class="collapse navbar-collapse d-none d-md-flex" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="">
@@ -330,7 +335,7 @@
         <div class="row">
             {% if user.is_authenticated %}
             <!-- Sidebar -->
-            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse" id="sidebarMenu">
                 <div class="position-sticky pt-3">
                     <ul class="nav flex-column sidebar-nav">
                         <li class="nav-item">
@@ -482,6 +487,14 @@
                     </div>
                 `;
             }, 1000);
+        }
+
+        // Toggle sidebar e navbar com um único botão no mobile
+        function toggleMenus() {
+            const el = document.getElementById('sidebarMenu');
+            if (!el) return;
+            const instance = bootstrap.Collapse.getInstance(el) || new bootstrap.Collapse(el, { toggle: false });
+            instance.toggle();
         }
 
         // Progress tracking for videos

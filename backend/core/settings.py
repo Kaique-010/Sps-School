@@ -115,6 +115,9 @@ REST_FRAMEWORK = {
         #'Licencas.authentication.CustomJWTAuthentication',  # Autenticação customizada
         #'Entidades.authentication.EntidadeJWTAuthentication', 
     ],
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',        
         'rest_framework.parsers.FormParser',       

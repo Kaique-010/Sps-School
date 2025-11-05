@@ -3,10 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async'; // 🔹 Timer usado pra simular progresso no web
 import 'package:spsschool/config/backend.dart';
+import '../utils/auth_utils.dart';
 
-// Import condicional para Web
-import '../utils/web_utils.dart' if (dart.library.io) '../utils/mobile_utils.dart';
+// Import condicional para web e mobile (permite usar o mesmo widget nas duas plataformas)
+import '../utils/web_utils.dart'
+    if (dart.library.io) '../utils/mobile_utils.dart';
 
 class VideoPage extends StatefulWidget {
   final String videoUrl;
@@ -25,54 +28,126 @@ class VideoPage extends StatefulWidget {
 }
 
 class _VideoPageState extends State<VideoPage> {
-  bool _isPlayerReady = false;
-  String? _videoId;
-  YoutubePlayerController? _ytController;
-  String? _conteudo;
+  bool _isPlayerReady = false; // controla se o player terminou de inicializar
+  String? _videoId; // ID do vídeo extraído da URL do YouTube
+  YoutubePlayerController? _ytController; // controlador do player (mobile)
+  String? _conteudo; // conteúdo textual do treinamento
+  double _progresso = 0.0; // 🔹 progresso atual (0 a 1)
+  Timer?
+  _timerWeb; // 🔹 simula progresso no navegador (pois o iframe não emite eventos)
 
   @override
   void initState() {
     super.initState();
-    _initializePlayer();
+    _initializePlayer(); // inicializa player e lógica de progresso
   }
 
   void _initializePlayer() {
-    // Extrair o ID do vídeo da URL do YouTube
-    _videoId = _extractVideoId(widget.videoUrl);
-    
+    _videoId = _extractVideoId(widget.videoUrl); // extrai ID do YouTube
+
     if (_videoId != null) {
-      if (!kIsWeb) {
-        _ytController = YoutubePlayerController(
-          initialVideoId: _videoId!,
-          flags: const YoutubePlayerFlags(
-            autoPlay: false,
-            mute: false,
-            enableCaption: true,
-            controlsVisibleAtStart: true,
-          ),
-        );
+      if (kIsWeb) {
+        // 🔹 Web: cria um timer que simula avanço no vídeo
+        _timerWeb = Timer.periodic(const Duration(seconds: 5), (_) {
+          if (_progresso < 1.0) {
+            setState(() {
+              _progresso += 0.05; // avança 5% a cada 5 segundos
+              if (_progresso > 1.0) _progresso = 1.0; // limita a 100%
+            });
+            _enviarProgresso(_progresso); // envia progresso pro backend
+          }
+        });
+      } else {
+        // 🔹 Mobile: usa listener real do player
+        _ytController =
+            YoutubePlayerController(
+              initialVideoId: _videoId!,
+              flags: const YoutubePlayerFlags(
+                autoPlay: false,
+                mute: false,
+                enableCaption: true,
+                controlsVisibleAtStart: true,
+              ),
+            )..addListener(
+              _listenerYoutube,
+            ); // escuta posição do vídeo em tempo real
       }
+
       setState(() {
         _isPlayerReady = true;
       });
     }
   }
 
+  /// 🔹 Listener do player (apenas mobile)
+  void _listenerYoutube() async {
+    if (!_isPlayerReady || _ytController == null) return;
+
+    final posicao = _ytController!.value.position.inSeconds;
+    final duracao = _ytController!.metadata.duration.inSeconds;
+    if (duracao <= 0) return;
+
+    final progresso = posicao / duracao; // calcula progresso entre 0–1
+    setState(() => _progresso = progresso); // atualiza barra
+
+    // Envia progresso a cada 10s ou ao atingir 95% do vídeo
+    if (posicao % 10 == 0 || progresso >= 0.95) {
+      await _enviarProgresso(progresso);
+    }
+  }
+
+  /// 🔹 Envia progresso ao backend
+  Future<void> _enviarProgresso(double progressoVideo) async {
+    final token = await getAuthToken(); // 🔹 busca o token do login
+    if (token == null) {
+      debugPrint('❌ Nenhum token encontrado. Usuário não autenticado.');
+      return;
+    }
+
+    final url = Uri.parse('${Backend.baseUrl}/api/treinamentos/progresso/');
+    final body = jsonEncode({
+      'treinamento': widget.treinamentoId,
+      'progresso_video': progressoVideo,
+      'lido': progressoVideo >= 0.95,
+    });
+
+    try {
+      final res = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // 🔹 aqui está a mágica
+        },
+        body: body,
+      );
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        debugPrint(
+          '✅ Progresso salvo: ${(progressoVideo * 100).toStringAsFixed(1)}%',
+        );
+      } else {
+        debugPrint('⚠️ Erro ao salvar progresso: ${res.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ Falha ao enviar progresso: $e');
+    }
+  }
+
+  /// 🔹 Extrai o ID do vídeo (parte final da URL do YouTube)
   String? _extractVideoId(String url) {
-    // Extrair ID do vídeo de diferentes formatos de URL do YouTube
     RegExp regExp = RegExp(
       r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})',
       caseSensitive: false,
-      multiLine: false,
     );
-    
-    final match = regExp.firstMatch(url);
-    return match?.group(1);
+    return regExp.firstMatch(url)?.group(1);
   }
 
   @override
   void dispose() {
+    // 🔹 encerra listeners e timers ao sair da tela
+    _ytController?.removeListener(_listenerYoutube);
     _ytController?.dispose();
+    _timerWeb?.cancel();
     super.dispose();
   }
 
@@ -89,7 +164,7 @@ class _VideoPageState extends State<VideoPage> {
           ? SingleChildScrollView(
               child: Column(
                 children: [
-                  // Player de vídeo
+                  // 🔹 Player principal
                   Container(
                     margin: const EdgeInsets.all(16),
                     height: 250,
@@ -109,50 +184,26 @@ class _VideoPageState extends State<VideoPage> {
                     ),
                   ),
 
-                  // Controles personalizados
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2A2C2B),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  // 🔹 Barra de progresso visual
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
                       children: [
-                        _buildControlButton(
-                          icon: Icons.replay_10,
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Use os controles do player para navegar'),
-                                backgroundColor: Color(0xFFFFA601),
-                              ),
-                            );
-                          },
+                        LinearProgressIndicator(
+                          value: _progresso, // valor entre 0 e 1
+                          backgroundColor: Colors.white24,
+                          color: const Color(0xFFFFA601),
+                          minHeight: 8,
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        _buildControlButton(
-                          icon: Icons.play_arrow,
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Use os controles do player para reproduzir'),
-                                backgroundColor: Color(0xFFFFA601),
-                              ),
-                            );
-                          },
-                          isMain: true,
-                        ),
-                        _buildControlButton(
-                          icon: Icons.forward_10,
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Use os controles do player para navegar'),
-                                backgroundColor: Color(0xFFFFA601),
-                              ),
-                            );
-                          },
+                        const SizedBox(height: 8),
+                        Text(
+                          // exibe percentual formatado
+                          '${(_progresso * 100).toStringAsFixed(1)}% concluído',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
                         ),
                       ],
                     ),
@@ -160,7 +211,7 @@ class _VideoPageState extends State<VideoPage> {
 
                   const SizedBox(height: 16),
 
-                  // Conteúdo do treinamento
+                  // 🔹 Conteúdo textual do treinamento
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16),
                     padding: const EdgeInsets.all(16),
@@ -183,7 +234,9 @@ class _VideoPageState extends State<VideoPage> {
                         FutureBuilder<void>(
                           future: _ensureConteudoLoaded(),
                           builder: (context, snapshot) {
-                            if (_conteudo == null && snapshot.connectionState != ConnectionState.done) {
+                            if (_conteudo == null &&
+                                snapshot.connectionState !=
+                                    ConnectionState.done) {
                               return Text(
                                 'Carregando conteúdo...',
                                 style: TextStyle(
@@ -192,9 +245,8 @@ class _VideoPageState extends State<VideoPage> {
                                 ),
                               );
                             }
-                            final texto = _conteudo ?? 'Sem conteúdo disponível';
                             return Text(
-                              texto,
+                              _conteudo ?? 'Sem conteúdo disponível',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 14,
@@ -205,93 +257,19 @@ class _VideoPageState extends State<VideoPage> {
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: 16),
-
-                  // Informações do treinamento
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2A2C2B),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Informações do Treinamento',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'ID do Treinamento: ${widget.treinamentoId}',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'URL do Vídeo: ${widget.videoUrl}',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Status: ${_isPlayerReady ? "Pronto para reprodução" : "Carregando..."}',
-                          style: TextStyle(
-                            color: _isPlayerReady 
-                                ? const Color(0xFFFFA601)
-                                : Colors.white.withOpacity(0.6),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
                 ],
               ),
             )
-          : Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red.withOpacity(0.7),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'URL de vídeo inválida',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: 18,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Não foi possível carregar o vídeo',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
+          : const Center(
+              child: Text(
+                'Erro ao carregar vídeo',
+                style: TextStyle(color: Colors.white),
               ),
             ),
     );
   }
 
+  /// 🔹 Define o player dependendo da plataforma (web vs mobile)
   Widget _buildYouTubePlayer() {
     if (_videoId == null) {
       return Container(
@@ -305,96 +283,56 @@ class _VideoPageState extends State<VideoPage> {
       );
     }
 
-    // Implementação condicional por plataforma
     if (kIsWeb) {
-      return _buildWebYouTubePlayer();
+      // 🔹 Web usa iframe HTML
+      final String viewId = 'youtube-player-$_videoId';
+      WebUtils.registerYouTubeViewFactory(viewId, _videoId!);
+      return HtmlElementView(viewType: viewId);
     } else {
-      return _buildMobileYouTubePlayer();
-    }
-  }
-
-  Widget _buildWebYouTubePlayer() {
-    // Registrar o view factory para o iframe (apenas Web)
-    final String viewId = 'youtube-player-$_videoId';
-    
-    // Usar WebUtils para registrar o view factory
-    WebUtils.registerYouTubeViewFactory(viewId, _videoId!);
-
-    return HtmlElementView(viewType: viewId);
-  }
-
-  Widget _buildMobileYouTubePlayer() {
-    if (_ytController == null) {
-      return Container(
-        color: Colors.black,
-        child: const Center(
-          child: Text(
-            'Player indisponível',
-            style: TextStyle(color: Colors.white),
+      // 🔹 Mobile usa plugin nativo
+      if (_ytController == null) {
+        return Container(
+          color: Colors.black,
+          child: const Center(
+            child: Text(
+              'Player indisponível',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
+        );
+      }
+      return YoutubePlayer(
+        controller: _ytController!,
+        showVideoProgressIndicator: true,
+        progressIndicatorColor: const Color(0xFFFFA601),
+        progressColors: const ProgressBarColors(
+          playedColor: Color(0xFFFFA601),
+          handleColor: Color(0xFFFFA601),
+          backgroundColor: Colors.white24,
+          bufferedColor: Colors.white38,
         ),
       );
     }
-    return YoutubePlayer(
-      controller: _ytController!,
-      showVideoProgressIndicator: true,
-      progressIndicatorColor: const Color(0xFFFFA601),
-      progressColors: const ProgressBarColors(
-        playedColor: Color(0xFFFFA601),
-        handleColor: Color(0xFFFFA601),
-        backgroundColor: Colors.white24,
-        bufferedColor: Colors.white38,
-      ),
-    );
   }
 
-  Widget _buildControlButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-    bool isMain = false,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isMain 
-            ? const Color(0xFFFFA601) 
-            : Colors.white.withOpacity(0.1),
-        shape: BoxShape.circle,
-      ),
-      child: IconButton(
-        onPressed: onPressed,
-        icon: Icon(
-          icon,
-          color: isMain ? Colors.black : Colors.white,
-          size: isMain ? 32 : 24,
-        ),
-      ),
-    );
-  }
-
+  /// 🔹 Busca o conteúdo textual do backend (DRF)
   Future<void> _ensureConteudoLoaded() async {
-    // Se já temos conteúdo vindo da navegação, usa-o e não carrega de novo
     if (_conteudo != null) return;
-    if (widget.treinamentoConteudo != null && widget.treinamentoConteudo!.isNotEmpty) {
-      setState(() {
-        _conteudo = widget.treinamentoConteudo;
-      });
+    if (widget.treinamentoConteudo?.isNotEmpty == true) {
+      setState(() => _conteudo = widget.treinamentoConteudo);
       return;
     }
-    // Caso contrário, busca do backend pelo ID
     try {
-      final url = Uri.parse('${Backend.baseUrl}/api/treinamentos/treinamentos/${widget.treinamentoId}/');
+      final url = Uri.parse(
+        '${Backend.baseUrl}/api/treinamentos/treinamentos/${widget.treinamentoId}/',
+      );
       final res = await http.get(url);
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
-        setState(() {
-          _conteudo = (data['conteudo'] as String?) ?? '';
-        });
+        setState(() => _conteudo = (data['conteudo'] as String?) ?? '');
       }
     } catch (_) {
-      // Silencia erros de rede, mostra conteúdo vazio
-      setState(() {
-        _conteudo = _conteudo ?? '';
-      });
+      setState(() => _conteudo = _conteudo ?? '');
     }
   }
 }
