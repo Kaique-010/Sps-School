@@ -5,6 +5,6 @@ class Backend {
   // Não usar barra no final. Ex.: https://sps-training.site ou http://localhost:8000
   static const String baseUrl = String.fromEnvironment(
     'BASE_URL',
-    defaultValue: 'https://sps-training.site',
+    defaultValue: 'http://localhost:8000',
   );
 }

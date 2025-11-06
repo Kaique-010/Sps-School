@@ -1,6 +1,6 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import Modulo, Treinamento, ProgressoTreinamento
 from .serializers import (
     ModuloSerializer,
@@ -16,11 +16,13 @@ import re
 class ModuloViewSet(viewsets.ModelViewSet):
     queryset = Modulo.objects.all()
     serializer_class = ModuloSerializer
+    permission_classes = [AllowAny]
 
 
 class TreinamentoViewSet(viewsets.ModelViewSet):
     queryset = Treinamento.objects.all()
     serializer_class = TreinamentoSerializer
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         """

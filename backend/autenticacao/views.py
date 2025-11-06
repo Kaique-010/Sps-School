@@ -18,6 +18,7 @@ class LoginView(APIView):
     """
     View para autenticação de usuário e geração de tokens JWT
     """
+    permission_classes = [AllowAny]
     
     def post(self, request):
         """

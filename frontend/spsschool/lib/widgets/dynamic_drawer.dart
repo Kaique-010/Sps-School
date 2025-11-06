@@ -37,7 +37,7 @@ class _DynamicDrawerWidgetState extends State<DynamicDrawerWidget> {
         _isLoading = true;
         _error = null;
       });
-      
+
       final modulos = await _moduloService.listarModulos();
       setState(() {
         _modulos = modulos;
@@ -159,70 +159,68 @@ class _DynamicDrawerWidgetState extends State<DynamicDrawerWidget> {
           Expanded(
             child: _isLoading
                 ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFFFFA601),
-                    ),
+                    child: CircularProgressIndicator(color: Color(0xFFFFA601)),
                   )
                 : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              size: 48,
-                              color: Colors.red.withOpacity(0.7),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Erro ao carregar módulos',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
-                                fontSize: 16,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _error!,
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.6),
-                                fontSize: 12,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _carregarModulos,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFFA601),
-                                foregroundColor: Colors.black,
-                              ),
-                              child: const Text('Tentar Novamente'),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: Colors.red.withOpacity(0.7),
                         ),
-                      )
-                    : ListView(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        children: [
-                          _buildMenuItem(
-                            context,
-                            icon: Icons.home_rounded,
-                            title: 'Home',
-                            route: '/home',
+                        const SizedBox(height: 16),
+                        Text(
+                          'Erro ao carregar módulos',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 16,
                           ),
-                          
-                          const SizedBox(height: 4),
-                          _buildDivider(),
-                          const SizedBox(height: 4),
-
-                          // Módulos dinâmicos
-                          ..._modulos.map((modulo) => _buildModuloExpansionMenu(
-                                context,
-                                modulo: modulo,
-                              )),
-                        ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _error!,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.6),
+                            fontSize: 12,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _carregarModulos,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFA601),
+                            foregroundColor: Colors.black,
+                          ),
+                          child: const Text('Tentar Novamente'),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    children: [
+                      _buildMenuItem(
+                        context,
+                        icon: Icons.home_rounded,
+                        title: 'Home',
+                        route: '/home',
                       ),
+
+                      const SizedBox(height: 4),
+                      _buildDivider(),
+                      const SizedBox(height: 4),
+
+                      // Módulos dinâmicos
+                      ..._modulos.map(
+                        (modulo) =>
+                            _buildModuloExpansionMenu(context, modulo: modulo),
+                      ),
+                    ],
+                  ),
           ),
 
           // Footer com logout
@@ -249,9 +247,7 @@ class _DynamicDrawerWidgetState extends State<DynamicDrawerWidget> {
   }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -307,9 +303,7 @@ class _DynamicDrawerWidgetState extends State<DynamicDrawerWidget> {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
@@ -346,9 +340,12 @@ class _DynamicDrawerWidgetState extends State<DynamicDrawerWidget> {
               : null,
           iconColor: const Color(0xFFFFA601),
           collapsedIconColor: Colors.white60,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          collapsedShape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          collapsedShape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           children: [
             _buildSubMenuItem(
               context,
@@ -357,11 +354,15 @@ class _DynamicDrawerWidgetState extends State<DynamicDrawerWidget> {
             ),
             // Se houver treinamentos específicos, pode listar aqui
             if (treinamentos.isNotEmpty)
-              ...treinamentos.take(3).map((treinamento) => _buildTreinamentoItem(
-                    context,
-                    treinamento: treinamento,
-                    moduloId: moduloId,
-                  )),
+              ...treinamentos
+                  .take(10)
+                  .map(
+                    (treinamento) => _buildTreinamentoItem(
+                      context,
+                      treinamento: treinamento,
+                      moduloId: moduloId,
+                    ),
+                  ),
           ],
         ),
       ),
@@ -384,7 +385,12 @@ class _DynamicDrawerWidgetState extends State<DynamicDrawerWidget> {
           );
         },
         child: Container(
-          padding: const EdgeInsets.only(left: 64, right: 16, top: 10, bottom: 10),
+          padding: const EdgeInsets.only(
+            left: 64,
+            right: 16,
+            top: 10,
+            bottom: 10,
+          ),
           child: Row(
             children: [
               Container(
@@ -433,7 +439,12 @@ class _DynamicDrawerWidgetState extends State<DynamicDrawerWidget> {
           );
         },
         child: Container(
-          padding: const EdgeInsets.only(left: 80, right: 16, top: 8, bottom: 8),
+          padding: const EdgeInsets.only(
+            left: 80,
+            right: 16,
+            top: 8,
+            bottom: 8,
+          ),
           child: Row(
             children: [
               Icon(
