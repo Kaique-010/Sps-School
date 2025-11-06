@@ -66,6 +66,14 @@
         alertBox.classList.remove('d-none');
       };
 
+      // Util para capturar o cookie CSRF definido pelo Django
+      function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+      }
+
       document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         alertBox.classList.add('d-none');
@@ -80,9 +88,15 @@
 
         try {
           // 1) Login de sessão para templates web
+          const csrftoken = getCookie('csrftoken');
+
           const sessionResp = await fetch('/api/auth/session-login/', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': csrftoken || ''
+            },
+            credentials: 'same-origin',
             body: JSON.stringify({ username, password })
           });
 
@@ -97,7 +111,11 @@
           try {
             const jwtResp = await fetch('/api/auth/login/', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken || ''
+              },
+              credentials: 'same-origin',
               body: JSON.stringify({ username, password })
             });
             const jwtData = await jwtResp.json();

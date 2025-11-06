@@ -2,11 +2,13 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.generics import RetrieveUpdateAPIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from django.views import View
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.shortcuts import redirect, render
 from .serializers import LoginSerializer, UsuarioSerializer, UsuarioPerfilSerializer
 from central_treinamentos.models import Modulo, Treinamento, ProgressoTreinamento
@@ -60,6 +62,7 @@ class LoginTemplateView(View):
     """
     View para renderizar o template de login (UI) na raiz
     """
+    @method_decorator(ensure_csrf_cookie)
     def get(self, request):
         return render(request, 'login.html')
 
@@ -105,6 +108,8 @@ class SessionLoginView(APIView):
     Autenticação baseada em sessão para a interface web.
     Cria a sessão do usuário (cookie) para que `request.user.is_authenticated` funcione nos templates.
     """
+    permission_classes = [AllowAny]
+    authentication_classes = []
     def post(self, request):
         data = request.data
         username = data.get('username')
