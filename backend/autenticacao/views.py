@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.authentication import SessionAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
@@ -83,26 +85,32 @@ class HomeView(View):
         # Contagens gerais
         total_modulos = Modulo.objects.count()
         total_treinamentos = Treinamento.objects.count()
+        
 
         # Progresso do usuário
         completed_treinamentos = 0
-        total_certificates = 0
         if request.user.is_authenticated:
             completed_treinamentos = ProgressoTreinamento.objects.filter(
                 usuario=request.user, lido=True
             ).count()
-            # Sem model específico de certificados, usar concluídos como proxy
-            total_certificates = completed_treinamentos
 
         context = {
             'modulos': Modulo.objects.prefetch_related('treinamentos').all(),
             'total_modulos': total_modulos,
             'total_treinamentos': total_treinamentos,
             'completed_treinamentos': completed_treinamentos,
-            'total_certificates': total_certificates,
         }
 
         return render(request, 'home.html', context)
+
+from django.contrib.auth.mixins import LoginRequiredMixin
+
+class PerfilTemplateView(LoginRequiredMixin, View):
+    """
+    View para renderizar o template de perfil do usuário (UI)
+    """
+    def get(self, request):
+        return render(request, 'perfil.html')
 
 class SessionLoginView(APIView):
     """
@@ -140,6 +148,7 @@ class PerfilUsuarioView(RetrieveUpdateAPIView):
     View para recuperar e atualizar dados do usuário autenticado
     """
     serializer_class = UsuarioPerfilSerializer
+    authentication_classes = [SessionAuthentication, JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get_object(self):

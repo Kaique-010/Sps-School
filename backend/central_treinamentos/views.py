@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, filters
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import Modulo, Treinamento, ProgressoTreinamento, PerguntaTreinamento
@@ -15,6 +15,7 @@ import re
 from rest_framework.decorators import action
 from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from django_filters.rest_framework import DjangoFilterBackend
 
 
 class ModuloViewSet(viewsets.ModelViewSet):
@@ -27,6 +28,9 @@ class TreinamentoViewSet(viewsets.ModelViewSet):
     queryset = Treinamento.objects.all()
     serializer_class = TreinamentoSerializer
     permission_classes = [AllowAny]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['modulo']
+    search_fields = ['titulo', 'conteudo']
 
     def get_queryset(self):
         """
@@ -99,6 +103,11 @@ class ProgressoTreinamentoViewSet(viewsets.ModelViewSet):
             "progresso_video", progresso.progresso_video
         )
         progresso.save()
+        
+        if progresso.progresso_video == 100:
+            progresso.lido = True
+            progresso.save()
+            
 
         return Response(
             ProgressoTreinamentoSerializer(progresso).data,

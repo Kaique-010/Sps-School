@@ -3,6 +3,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     LoginView,
     PerfilUsuarioView,
+    PerfilTemplateView,
     LogoutView,
     VerificarTokenView,
     SessionLoginView,
@@ -23,6 +24,9 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('verificar-token/', VerificarTokenView.as_view(), name='verificar_token'),
     
-    # Perfil do usuário
+    # Perfil do usuário (API)
     path('perfil/', PerfilUsuarioView.as_view(), name='perfil_usuario'),
+    
+    # Perfil do usuário (Template)
+    path('meu-perfil/', PerfilTemplateView.as_view(), name='perfil_template'),
 ]

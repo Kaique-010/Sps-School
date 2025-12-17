@@ -12,24 +12,30 @@
                         progresso_inicial|floatformat:0 }}%</div>
                 </div>
             </div>
-            <div class="video-container mb-3">
+            <div class="ratio ratio-16x9 mb-3 bg-black">
                 {% if embed_type == 'file' and embed_url %}
-                <video id="html5Video" controls style="width:100%; max-height:480px; background:black;"
+                <video id="html5Video" controls class="w-100 h-100"
                     src="{{ embed_url }}"></video>
                 {% elif embed_url %}
                 <iframe id="{% if embed_type == 'youtube' %}ytplayer{% else %}videoFrame{% endif %}"
-                    src="{{ embed_url }}" style="width:100%; height:480px; border:0;"
+                    src="{{ embed_url }}" class="w-100 h-100"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     referrerpolicy="strict-origin-when-cross-origin" allowfullscreen>
                 </iframe>
                 {% else %}
-                <div class="alert alert-warning">Nenhum vídeo disponível para este treinamento.</div>
+                <div class="d-flex align-items-center justify-content-center bg-dark text-white w-100 h-100">
+                    <div class="alert alert-warning m-0">Nenhum vídeo disponível para este treinamento.</div>
+                </div>
                 {% endif %}
             </div>
             {% if embed_type == 'youtube' %}
-            <div class="mb-3">
-                <button type="button" class="btn btn-success me-2" id="ytPlay">Reproduzir</button>
-                <button type="button" class="btn btn-secondary" id="ytPause">Pausar</button>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <button type="button" class="btn btn-success flex-grow-1 flex-md-grow-0" id="ytPlay">
+                    <i class="bi bi-play-fill me-1"></i>Reproduzir
+                </button>
+                <button type="button" class="btn btn-secondary flex-grow-1 flex-md-grow-0" id="ytPause">
+                    <i class="bi bi-pause-fill me-1"></i>Pausar
+                </button>
             </div>
             {% endif %}
             <div class="card">

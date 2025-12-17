@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Meu Perfil - SPS Training System{% endblock %}
+
+{% block content %}
+<style>
+    .card-header {
+        background: linear-gradient(90deg, #471717, #133253);
+        color: #fff;
+    }
+</style>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-person-circle me-2" style="font-size: 1.5rem"></i>Meu Perfil</h4>
+                </div>
+                <div class="card-body">
+                    <form id="profileForm">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="username" class="form-label">Usuário</label>
+                                <input type="text" style="font-size: 1.2rem; color: #000000;" class="form-control"
+                                    id="username" value="{{ user.username }}" disabled>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">E-mail</label>
+                                <input type="email" style="font-size: 1.2rem; color: #000000;" class="form-control"
+                                    id="email" value="{{ user.email }}" disabled>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="first_name" class="form-label">Nome</label>
+                                <input type="text" class="form-control" id="first_name" value="{{ user.first_name }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="last_name" class="form-label">Sobrenome</label>
+                                <input type="text" class="form-control" id="last_name" value="{{ user.last_name }}">
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary" id="saveBtn">
+                                <i class="bi bi-save me-2"></i>Salvar Alterações
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="alert alert-info mt-4" role="alert">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                Para alterar sua senha, entre em contato com o administrador do sistema.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('profileForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const btn = document.getElementById('saveBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+        btn.disabled = true;
+
+        const data = {
+            first_name: document.getElementById('first_name').value,
+            last_name: document.getElementById('last_name').value
+        };
+
+        fetch('/api/auth/perfil/', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sucesso) {
+                    alert('Perfil atualizado com sucesso!');
+                    window.location.reload();
+                } else {
+                    alert('Erro ao atualizar perfil: ' + (data.mensagem || 'Erro desconhecido'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Erro ao conectar com o servidor');
+            })
+            .finally(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}
