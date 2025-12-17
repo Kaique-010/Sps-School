@@ -66,10 +66,10 @@
     {% if user.is_authenticated %}
     <div class="row mb-5">
         <div class="col-12">
-            <h3 class="mb-4">Seu Progresso</h3>
+            <h3 class="mb-4" style="text-align: center;">Seu Progresso</h3>
         </div>
 
-        <div class="col-md-3 mb-3">
+        <div class="col-md-4 mb-4">
             <div class="card stats-card border-0">
                 <div class="card-body text-center">
                     <i class="bi bi-collection display-6 mb-2"></i>
@@ -79,7 +79,7 @@
             </div>
         </div>
 
-        <div class="col-md-3 mb-3">
+        <div class="col-md-4 mb-4">
             <div class="card stats-card border-0">
                 <div class="card-body text-center">
                     <i class="bi bi-play-circle display-6 mb-2"></i>
@@ -89,7 +89,7 @@
             </div>
         </div>
 
-        <div class="col-md-3 mb-3">
+        <div class="col-md-4 mb-4">
             <div class="card stats-card border-0">
                 <div class="card-body text-center">
                     <i class="bi bi-check-circle display-6 mb-2"></i>
@@ -99,15 +99,8 @@
             </div>
         </div>
 
-        <div class="col-md-3 mb-3">
-            <div class="card stats-card border-0">
-                <div class="card-body text-center">
-                    <i class="bi bi-award display-6 mb-2"></i>
-                    <h4 class="card-title">{{ total_certificates|default:0 }}</h4>
-                    <p class="card-text">Certificados</p>
-                </div>
-            </div>
-        </div>
+
+    </div>
     </div>
     {% endif %}
 

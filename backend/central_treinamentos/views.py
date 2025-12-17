@@ -1,16 +1,20 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import Modulo, Treinamento, ProgressoTreinamento
+from .models import Modulo, Treinamento, ProgressoTreinamento, PerguntaTreinamento
 from .serializers import (
     ModuloSerializer,
     TreinamentoSerializer,
     ProgressoTreinamentoSerializer,
+    PerguntaTreinamentoSerializer,
 )
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from urllib.parse import urlparse, parse_qs
 import re
+from rest_framework.decorators import action
+from rest_framework.authentication import SessionAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 class ModuloViewSet(viewsets.ModelViewSet):
@@ -34,6 +38,27 @@ class TreinamentoViewSet(viewsets.ModelViewSet):
             qs = qs.filter(modulo_id=modulo_id)
         return qs
 
+    @action(detail=True, methods=["post"], url_path="quiz")
+    def submit_quiz(self, request, pk=None):
+        treinamento = self.get_object()
+        respostas = request.data.get("respostas", {})
+        perguntas = PerguntaTreinamento.objects.filter(treinamento=treinamento).order_by("ordem")
+        total = perguntas.count()
+        corretas = 0
+        for p in perguntas:
+            resp = respostas.get(str(p.id)) or respostas.get(p.id)
+            if resp and str(resp).upper() == p.correta:
+                corretas += 1
+        aprovado = (total > 0 and corretas == total)
+        if request.user.is_authenticated:
+            prog, _ = ProgressoTreinamento.objects.get_or_create(
+                usuario=request.user, treinamento=treinamento
+            )
+            if aprovado:
+                prog.lido = True
+                prog.save()
+        return Response({"aprovado": aprovado, "corretas": corretas, "total": total})
+
 
 class ProgressoTreinamentoViewSet(viewsets.ModelViewSet):
     """
@@ -43,6 +68,7 @@ class ProgressoTreinamentoViewSet(viewsets.ModelViewSet):
 
     serializer_class = ProgressoTreinamentoSerializer
     permission_classes = [IsAuthenticated]
+    authentication_classes = [SessionAuthentication, JWTAuthentication]
 
     def get_queryset(self):
         """
@@ -65,13 +91,10 @@ class ProgressoTreinamentoViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 🔹 Cria ou atualiza o progresso
         progresso, _ = ProgressoTreinamento.objects.get_or_create(
             usuario=user, treinamento_id=treino_id
         )
 
-        # Atualiza campos recebidos
-        progresso.lido = dados.get("lido", progresso.lido)
         progresso.progresso_video = dados.get(
             "progresso_video", progresso.progresso_video
         )
@@ -104,14 +127,18 @@ def treinamentos_page(request, modulo_id):
     """
     Página HTML que lista os treinamentos de um módulo específico.
     """
-    modulo = get_object_or_404(
-        Modulo.objects.prefetch_related('treinamentos'), id=modulo_id
-    )
+    modulo = get_object_or_404(Modulo.objects.prefetch_related('treinamentos'), id=modulo_id)
     treinamentos = modulo.treinamentos.all()
+    progressos = {}
+    if request.user.is_authenticated:
+        qs = ProgressoTreinamento.objects.filter(usuario=request.user, treinamento__in=treinamentos)
+        for p in qs:
+            progressos[p.treinamento_id] = {"lido": p.lido, "progresso_video": p.progresso_video}
 
     context = {
         'modulo': modulo,
         'treinamentos': treinamentos,
+        'progressos': progressos,
     }
     return render(request, 'treinamentos.html', context)
 
@@ -123,6 +150,10 @@ def video_page(request, treinamento_id):
     """
     treinamento = get_object_or_404(Treinamento, id=treinamento_id)
     raw_url = treinamento.video_url or ""
+    perguntas = PerguntaTreinamento.objects.filter(treinamento=treinamento).order_by("ordem")
+    progresso_atual = None
+    if request.user.is_authenticated:
+        progresso_atual = ProgressoTreinamento.objects.filter(usuario=request.user, treinamento=treinamento).first()
 
     def build_embed(url: str):
         if not url:
@@ -149,10 +180,13 @@ def video_page(request, treinamento_id):
 
             if video_id:
                 start = qs.get("t", [None])[0] or qs.get("start", [None])[0]
-                start_param = f"?start={start}" if start else ""
+                if start:
+                    q = f"?start={start}&enablejsapi=1&controls=0&disablekb=1"
+                else:
+                    q = "?enablejsapi=1&controls=0&disablekb=1"
                 return {
                     "type": "youtube",
-                    "url": f"https://www.youtube.com/embed/{video_id}{start_param}",
+                    "url": f"https://www.youtube.com/embed/{video_id}{q}",
                 }
 
         # Vimeo
@@ -178,5 +212,8 @@ def video_page(request, treinamento_id):
         'embed_type': embed.get('type'),
         'embed_url': embed.get('url'),
         'conteudo': treinamento.conteudo,
+        'perguntas': perguntas,
+        'progresso_inicial': progresso_atual.progresso_video if progresso_atual else 0.0,
+        'aprovado': progresso_atual.lido if progresso_atual else False,
     }
     return render(request, 'video.html', context)

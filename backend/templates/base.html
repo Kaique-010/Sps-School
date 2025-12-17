@@ -1,18 +1,19 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="pt-br" data-theme="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}SPS Training System{% endblock %}</title>
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    
+
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    
+
     <!-- Custom CSS -->
     <style>
         :root {
@@ -75,7 +76,8 @@
             position: relative;
             width: 100%;
             height: 0;
-            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            padding-bottom: 56.25%;
+            /* 16:9 aspect ratio */
         }
 
         .video-container iframe {
@@ -141,13 +143,15 @@
             border-color: var(--bs-primary);
         }
 
-        .form-control, .form-select {
+        .form-control,
+        .form-select {
             background-color: var(--bs-card-bg);
             border-color: var(--bs-border-color);
             color: var(--bs-body-color);
         }
 
-        .form-control:focus, .form-select:focus {
+        .form-control:focus,
+        .form-select:focus {
             background-color: var(--bs-card-bg);
             border-color: var(--bs-primary);
             color: var(--bs-body-color);
@@ -174,14 +178,16 @@
             display: inline-block;
             width: 20px;
             height: 20px;
-            border: 3px solid rgba(255,255,255,.3);
+            border: 3px solid rgba(255, 255, 255, .3);
             border-radius: 50%;
             border-top-color: #fff;
             animation: spin 1s ease-in-out infinite;
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .video-progress {
@@ -237,9 +243,10 @@
             border-bottom: none;
         }
     </style>
-    
+
     {% block extra_css %}{% endblock %}
 </head>
+
 <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark">
@@ -249,15 +256,16 @@
                 SPS Training
             </a>
             <!-- Botão único para abrir sidebar e navbar no mobile -->
-            <button class="btn btn-outline-primary d-md-none me-2" type="button" onclick="toggleMenus()" aria-label="Alternar menus">
+            <button class="btn btn-outline-primary d-md-none me-2" type="button" onclick="toggleMenus()"
+                aria-label="Alternar menus">
                 <i class="bi bi-list"></i>
             </button>
-            
+
             <!-- Oculta o toggler padrão para evitar duplicidade -->
             <button class="navbar-toggler d-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            
+
             <div class="collapse navbar-collapse d-none d-md-flex" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
@@ -270,18 +278,10 @@
                             <i class="bi bi-collection me-1"></i>Módulos
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="">
-                            <i class="bi bi-award me-1"></i>Certificados
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="">
-                            <i class="bi bi-question-circle me-1"></i>FAQ
-                        </a>
-                    </li>
+
+
                 </ul>
-                
+
                 <!-- Search -->
                 <div class="search-container me-3">
                     <div class="input-group">
@@ -292,7 +292,7 @@
                     </div>
                     <div class="search-results" id="searchResults"></div>
                 </div>
-                
+
                 <ul class="navbar-nav">
                     <!-- Theme Toggle -->
                     <li class="nav-item">
@@ -300,7 +300,7 @@
                             <i class="bi bi-moon-fill" id="themeIcon"></i>
                         </button>
                     </li>
-                    
+
                     {% if user.is_authenticated %}
                     <!-- User Menu -->
                     <li class="nav-item dropdown">
@@ -310,12 +310,14 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="">
-                                <i class="bi bi-person me-2"></i>Perfil
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
+                                    <i class="bi bi-person me-2"></i>Perfil
+                                </a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
                             <li><a class="dropdown-item" href="{% url 'logout' %}">
-                                <i class="bi bi-box-arrow-right me-2"></i>Sair
-                            </a></li>
+                                    <i class="bi bi-box-arrow-right me-2"></i>Sair
+                                </a></li>
                         </ul>
                     </li>
                     {% else %}
@@ -346,75 +348,70 @@
 
                         {% if modulos %}
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center" data-bs-toggle="collapse" href="#modulesCollapse" role="button" aria-expanded="false" aria-controls="modulesCollapse">
+                            <a class="nav-link d-flex align-items-center" data-bs-toggle="collapse"
+                                href="#modulesCollapse" role="button" aria-expanded="false"
+                                aria-controls="modulesCollapse">
                                 <i class="bi bi-collection me-2"></i>Módulos
                                 <i class="bi bi-chevron-down ms-auto"></i>
                             </a>
                             <div class="collapse" id="modulesCollapse">
                                 <ul class="list-unstyled ms-3">
                                     {% for modulo in modulos %}
-                                        <li class="nav-item">
-                                            <a class="nav-link d-flex align-items-center" data-bs-toggle="collapse" href="#module-{{ modulo.id }}" role="button" aria-expanded="false" aria-controls="module-{{ modulo.id }}">
-                                                {{ modulo.nome }}
-                                                <i class="bi bi-chevron-down ms-auto"></i>
-                                            </a>
-                                            <div class="collapse" id="module-{{ modulo.id }}">
-                                                <ul class="list-unstyled ms-3">
-                                                    {% for t in modulo.treinamentos.all %}
-                                                        <li>
-                                                            <a class="nav-link" href="{% url 'video_page' t.id %}">
-                                                                <i class="bi bi-play-circle me-1"></i>{{ t.titulo }}
-                                                            </a>
-                                                        </li>
-                                                    {% empty %}
-                                                        <li class="nav-link disabled">Sem treinamentos</li>
-                                                    {% endfor %}
-                                                    <li>
-                                                        <a class="nav-link" href="{% url 'treinamentos_page' modulo.id %}">
-                                                            <i class="bi bi-list-ul me-1"></i>Ver todos
-                                                        </a>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center" data-bs-toggle="collapse"
+                                            href="#module-{{ modulo.id }}" role="button" aria-expanded="false"
+                                            aria-controls="module-{{ modulo.id }}">
+                                            {{ modulo.nome }}
+                                            <i class="bi bi-chevron-down ms-auto"></i>
+                                        </a>
+                                        <div class="collapse" id="module-{{ modulo.id }}">
+                                            <ul class="list-unstyled ms-3">
+                                                {% for t in modulo.treinamentos.all %}
+                                                <li>
+                                                    <a class="nav-link" href="{% url 'video_page' t.id %}">
+                                                        <i class="bi bi-play-circle me-1"></i>{{ t.titulo }}
+                                                    </a>
+                                                </li>
+                                                {% empty %}
+                                                <li class="nav-link disabled">Sem treinamentos</li>
+                                                {% endfor %}
+                                                <li>
+                                                    <a class="nav-link" href="{% url 'treinamentos_page' modulo.id %}">
+                                                        <i class="bi bi-list-ul me-1"></i>Ver todos
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </li>
                                     {% endfor %}
                                 </ul>
                             </div>
                         </li>
                         {% endif %}
 
-                        <li class="nav-item">
-                            <a class="nav-link" href="">
-                                <i class="bi bi-award me-2"></i>Certificados
-                            </a>
-                        </li>
+
                         <li class="nav-item">
                             <a class="nav-link" href="">
                                 <i class="bi bi-person me-2"></i>Perfil
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="">
-                                <i class="bi bi-question-circle me-2"></i>FAQ
-                            </a>
-                        </li>
                     </ul>
                 </div>
             </nav>
-            
+
             <!-- Content -->
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-            {% else %}
-            <main class="col-12">
-            {% endif %}
-                {% block content %}{% endblock %}
-            </main>
+                {% else %}
+                <main class="col-12">
+                    {% endif %}
+                    {% block content %}{% endblock %}
+                </main>
         </div>
     </div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- Custom JS -->
     <script>
         // Theme Management
@@ -422,19 +419,19 @@
             const html = document.documentElement;
             const currentTheme = html.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            
+
             html.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
-            
+
             const icon = document.getElementById('themeIcon');
             icon.className = newTheme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
         }
 
         // Load saved theme
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const savedTheme = localStorage.getItem('theme') || 'dark';
             document.documentElement.setAttribute('data-theme', savedTheme);
-            
+
             const icon = document.getElementById('themeIcon');
             icon.className = savedTheme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
         });
@@ -445,22 +442,22 @@
         const searchResults = document.getElementById('searchResults');
 
         if (searchInput) {
-            searchInput.addEventListener('input', function() {
+            searchInput.addEventListener('input', function () {
                 clearTimeout(searchTimeout);
                 const query = this.value.trim();
-                
+
                 if (query.length < 2) {
                     searchResults.style.display = 'none';
                     return;
                 }
-                
+
                 searchTimeout = setTimeout(() => {
                     performSearch(query);
                 }, 300);
             });
 
             // Hide search results when clicking outside
-            document.addEventListener('click', function(e) {
+            document.addEventListener('click', function (e) {
                 if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
                     searchResults.style.display = 'none';
                 }
@@ -477,7 +474,7 @@
                 </div>
             `;
             searchResults.style.display = 'block';
-            
+
             // Simulate API call
             setTimeout(() => {
                 searchResults.innerHTML = `
@@ -510,13 +507,13 @@
                     completed: completed
                 })
             })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Progress updated:', data);
-            })
-            .catch(error => {
-                console.error('Error updating progress:', error);
-            });
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Progress updated:', data);
+                })
+                .catch(error => {
+                    console.error('Error updating progress:', error);
+                });
         }
 
         // Get CSRF token
@@ -543,7 +540,7 @@
         // Show toast notification
         function showToast(message, type = 'info') {
             const toastContainer = document.getElementById('toastContainer') || createToastContainer();
-            
+
             const toast = document.createElement('div');
             toast.className = `toast align-items-center text-white bg-${type} border-0`;
             toast.setAttribute('role', 'alert');
@@ -553,11 +550,11 @@
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
                 </div>
             `;
-            
+
             toastContainer.appendChild(toast);
             const bsToast = new bootstrap.Toast(toast);
             bsToast.show();
-            
+
             toast.addEventListener('hidden.bs.toast', () => {
                 toast.remove();
             });
@@ -571,7 +568,8 @@
             return container;
         }
     </script>
-    
+
     {% block extra_js %}{% endblock %}
 </body>
+
 </html>

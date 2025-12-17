@@ -19,6 +19,23 @@ class Treinamento(models.Model):
         return self.titulo
 
 
+class PerguntaTreinamento(models.Model):
+    treinamento = models.ForeignKey(Treinamento, on_delete=models.CASCADE, related_name='perguntas')
+    ordem = models.PositiveIntegerField(default=1)
+    texto = models.CharField(max_length=255)
+    opcao_a = models.CharField(max_length=255)
+    opcao_b = models.CharField(max_length=255)
+    opcao_c = models.CharField(max_length=255)
+    opcao_d = models.CharField(max_length=255)
+    correta = models.CharField(max_length=1, choices=[('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D')])
+
+    class Meta:
+        unique_together = ('treinamento', 'ordem')
+
+    def __str__(self):
+        return f"{self.treinamento.titulo} - {self.ordem}"
+
+
 class ProgressoTreinamento(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE)
     treinamento = models.ForeignKey(Treinamento, on_delete=models.CASCADE)

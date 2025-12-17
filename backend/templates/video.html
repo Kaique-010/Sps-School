@@ -4,21 +4,34 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-12 col-lg-8">
+            <div class="mb-3">
+                <div class="progress" style="height: 12px;">
+                    <div id="progressBar" class="progress-bar" role="progressbar"
+                        style="width: {{ progresso_inicial|floatformat:0 }}%;"
+                        aria-valuenow="{{ progresso_inicial|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100">{{
+                        progresso_inicial|floatformat:0 }}%</div>
+                </div>
+            </div>
             <div class="video-container mb-3">
                 {% if embed_type == 'file' and embed_url %}
-                    <video controls style="width:100%; max-height:480px; background:black;" src="{{ embed_url }}"></video>
+                <video id="html5Video" controls style="width:100%; max-height:480px; background:black;"
+                    src="{{ embed_url }}"></video>
                 {% elif embed_url %}
-                    <iframe
-                        src="{{ embed_url }}"
-                        style="width:100%; height:480px; border:0;"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        referrerpolicy="strict-origin-when-cross-origin"
-                        allowfullscreen>
-                    </iframe>
+                <iframe id="{% if embed_type == 'youtube' %}ytplayer{% else %}videoFrame{% endif %}"
+                    src="{{ embed_url }}" style="width:100%; height:480px; border:0;"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerpolicy="strict-origin-when-cross-origin" allowfullscreen>
+                </iframe>
                 {% else %}
-                    <div class="alert alert-warning">Nenhum vídeo disponível para este treinamento.</div>
+                <div class="alert alert-warning">Nenhum vídeo disponível para este treinamento.</div>
                 {% endif %}
             </div>
+            {% if embed_type == 'youtube' %}
+            <div class="mb-3">
+                <button type="button" class="btn btn-success me-2" id="ytPlay">Reproduzir</button>
+                <button type="button" class="btn btn-secondary" id="ytPause">Pausar</button>
+            </div>
+            {% endif %}
             <div class="card">
                 <div class="card-body">
                     <h4 class="card-title">{{ treinamento.titulo }}</h4>
@@ -28,4 +41,245 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="quizModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Perguntas</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {% if perguntas %}
+                <form id="quizForm">
+                    {% for p in perguntas %}
+                    <div class="mb-3">
+                        <div class="fw-semibold mb-2">{{ p.ordem }}. {{ p.texto }}</div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="q_{{ p.id }}" id="q{{ p.id }}_A"
+                                value="A">
+                            <label class="form-check-label" for="q{{ p.id }}_A">{{ p.opcao_a }}</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="q_{{ p.id }}" id="q{{ p.id }}_B"
+                                value="B">
+                            <label class="form-check-label" for="q{{ p.id }}_B">{{ p.opcao_b }}</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="q_{{ p.id }}" id="q{{ p.id }}_C"
+                                value="C">
+                            <label class="form-check-label" for="q{{ p.id }}_C">{{ p.opcao_c }}</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="q_{{ p.id }}" id="q{{ p.id }}_D"
+                                value="D">
+                            <label class="form-check-label" for="q{{ p.id }}_D">{{ p.opcao_d }}</label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </form>
+                <div class="mt-2" id="quizResult"></div>
+                {% else %}
+                <div class="alert alert-info">Sem perguntas disponíveis.</div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="submitQuiz">Enviar respostas</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    const API_BASE = '/api/treinamentos';
+    const PROGRESS_URL = API_BASE + '/progresso/';
+    const QUIZ_URL = API_BASE + '/treinamentos/{{ treinamento.id }}/quiz/';
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+    const csrftoken = getCookie('csrftoken');
+    const treinamentoId = {{ treinamento.id }};
+    let maxPercent = parseFloat('{{ progresso_inicial|default:0 }}') || 0;
+    const aprovadoInicial = '{{ aprovado|yesno:"true,false" }}' === 'true';
+    const progressBar = document.getElementById('progressBar');
+    function updateProgressBar(p) {
+        const pct = Math.min(100, Math.max(0, p));
+        progressBar.style.width = pct + '%';
+        progressBar.setAttribute('aria-valuenow', pct);
+        progressBar.textContent = Math.floor(pct) + '%';
+    }
+    function sendProgress(pct) {
+        fetch(PROGRESS_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ treinamento: treinamentoId, progresso_video: pct })
+        }).catch(() => { });
+    }
+    let quizShown = false;
+    function maybeShowQuiz() {
+        if (quizShown) return;
+        if (aprovadoInicial) return;
+        const el = document.getElementById('quizModal');
+        if (!el) return;
+        quizShown = true;
+        const m = new bootstrap.Modal(el);
+        m.show();
+    }
+    updateProgressBar(maxPercent);
+    (function initHTML5() {
+        const v = document.getElementById('html5Video');
+        if (!v) return;
+        let lastSent = maxPercent;
+        let durationKnown = false;
+        let maxAllowedTime = 0;
+        function recalcMaxAllowed() {
+            if (v.duration && !isNaN(v.duration)) {
+                durationKnown = true;
+                maxAllowedTime = (maxPercent / 100) * v.duration;
+            }
+        }
+        v.addEventListener('loadedmetadata', recalcMaxAllowed);
+        v.addEventListener('timeupdate', () => {
+            const d = v.duration || 0;
+            if (d > 0) {
+                const pct = (v.currentTime / d) * 100;
+                const allowed = (maxPercent / 100) * d;
+                const delta = v.currentTime - allowed;
+                if (delta > 2) {
+                    v.currentTime = allowed;
+                    return;
+                }
+                if (pct > maxPercent) {
+                    maxPercent = pct;
+                    updateProgressBar(maxPercent);
+                    if (Math.floor(maxPercent) - Math.floor(lastSent) >= 1) {
+                        lastSent = maxPercent;
+                        sendProgress(maxPercent);
+                    }
+                    if (maxPercent >= 99.5) {
+                        maxPercent = 100;
+                        updateProgressBar(maxPercent);
+                        sendProgress(100);
+                        maybeShowQuiz();
+                    }
+                }
+            }
+        });
+        v.addEventListener('seeking', () => {
+            recalcMaxAllowed();
+            if (durationKnown) {
+                if (v.currentTime > maxAllowedTime + 0.5) {
+                    v.currentTime = maxAllowedTime;
+                }
+            }
+        });
+        v.addEventListener('ended', () => {
+            maxPercent = 100;
+            updateProgressBar(maxPercent);
+            sendProgress(100);
+            maybeShowQuiz();
+        });
+    })();
+    (function initYouTube() {
+        const iframe = document.getElementById('ytplayer');
+        if (!iframe) return;
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.body.appendChild(tag);
+        let player;
+        let lastSent = maxPercent;
+        let duration = 0;
+        let intervalId = null;
+        window.onYouTubeIframeAPIReady = function () {
+            player = new YT.Player('ytplayer', {
+                events: {
+                    'onReady': function (e) {
+                        duration = player.getDuration() || 0;
+                        intervalId = setInterval(function () {
+                            const ct = player.getCurrentTime() || 0;
+                            if (duration > 0) {
+                                const pct = (ct / duration) * 100;
+                                const allowed = (maxPercent / 100) * duration;
+                                const delta = ct - allowed;
+                                if (delta > 2) {
+                                    player.seekTo(allowed, true);
+                                    return;
+                                }
+                                if (pct > maxPercent) {
+                                    maxPercent = pct;
+                                    updateProgressBar(maxPercent);
+                                    if (Math.floor(maxPercent) - Math.floor(lastSent) >= 1) {
+                                        lastSent = maxPercent;
+                                        sendProgress(maxPercent);
+                                    }
+                                    if (maxPercent >= 99.5) {
+                                        maxPercent = 100;
+                                        updateProgressBar(maxPercent);
+                                        sendProgress(100);
+                                        maybeShowQuiz();
+                                    }
+                                }
+                            }
+                        }, 250);
+                    },
+                    'onStateChange': function (evt) {
+                        if (duration <= 0) {
+                            duration = player.getDuration() || 0;
+                        }
+                        if (evt.data === YT.PlayerState.ENDED) {
+                            maxPercent = 100;
+                            updateProgressBar(maxPercent);
+                            sendProgress(100);
+                            maybeShowQuiz();
+                        }
+                    }
+                }
+            });
+        };
+        const btnPlay = document.getElementById('ytPlay');
+        const btnPause = document.getElementById('ytPause');
+        if (btnPlay) btnPlay.addEventListener('click', function () { if (player) player.playVideo(); });
+        if (btnPause) btnPause.addEventListener('click', function () { if (player) player.pauseVideo(); });
+    })();
+    (function initQuiz() {
+        const btn = document.getElementById('submitQuiz');
+        if (!btn) return;
+        const form = document.getElementById('quizForm');
+        btn.addEventListener('click', function () {
+            const inputs = form.querySelectorAll('input[type=radio]:checked');
+            const respostas = {};
+            inputs.forEach(function (input) {
+                const name = input.name;
+                const id = name.split('_')[1];
+                respostas[id] = input.value;
+            });
+            fetch(QUIZ_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ respostas: respostas })
+            }).then(r => r.json()).then(data => {
+                const res = document.getElementById('quizResult');
+                if (data.aprovado) {
+                    res.className = 'alert alert-success';
+                    res.textContent = 'Aprovado. Conteúdo concluído.';
+                    btn.disabled = true;
+                } else {
+                    res.className = 'alert alert-danger';
+                    res.textContent = 'Reprovado. Respostas corretas: ' + data.corretas + '/' + data.total + '.';
+                }
+            }).catch(() => { });
+        });
+        if (maxPercent >= 100 && !aprovadoInicial) {
+            maybeShowQuiz();
+        }
+    })();
+</script>
 {% endblock %}
