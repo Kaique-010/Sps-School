@@ -26,6 +26,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('autenticacao.urls')),
     path('api/treinamentos/', include('central_treinamentos.urls')),
+    path('tkts/', include('tkts.urls')),
     
     # Rotas do drf_spectacular para documentação da API
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

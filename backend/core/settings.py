@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'central_treinamentos',
+    'tkts',
 ]
 
 MIDDLEWARE = [

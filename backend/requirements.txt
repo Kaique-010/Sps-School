@@ -16,6 +16,7 @@ python-decouple==3.8
 python-dotenv==1.2.1
 PyYAML==6.0.3
 referencing==0.37.0
+requests
 rpds-py==0.28.0
 sqlparse==0.5.3
 typing_extensions==4.15.0
