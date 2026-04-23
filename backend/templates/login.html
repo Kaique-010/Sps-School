@@ -1,96 +1,255 @@
 {%load static%}
 <!doctype html>
 <html lang="pt-br">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SPS | Login</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-      body {
-        min-height: 100vh;
-        background: linear-gradient(135deg, #0f172a 0%, #1f2937 100%);
-        color: #e5e7eb;
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SPS | Login</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f172a 0%, #313944 100%);
+      color: #e5e7eb;
+    }
+
+    .form-label i {
+      margin-right: 6px;
+      color: #60a5fa;
+    }
+
+    .brand {
+      font-weight: 700;
+      letter-spacing: .5px;
+    }
+
+    .login-card {
+      backdrop-filter: blur(6px);
+      background: rgba(17, 24, 39, 0.75);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 16px;
+      box-shadow: 0 0 10px rgba(67, 85, 97, 0.5);
+    }
+
+    .form-control,
+    .btn {
+      border-radius: 10px;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      border-color: #2563eb;
+    }
+
+    .btn-primary:hover {
+      background: #72b1a5;
+      border-color: #1d4ed8;
+    }
+
+    .footer-note {
+      color: #94a3b8;
+    }
+
+    .btn-loading {
+      animation: pulseLogin 1s infinite;
+      pointer-events: none;
+    }
+
+    @keyframes pulseLogin {
+      0% {
+        transform: scale(1);
+        opacity: 1;
       }
-      .brand { font-weight: 700; letter-spacing: .5px; }
-      .login-card {
-        backdrop-filter: blur(6px);
-        background: rgba(17, 24, 39, 0.75);
-        border: 1px solid rgba(148, 163, 184, 0.2);
-        border-radius: 16px;
+
+      50% {
+        transform: scale(1.02);
+        opacity: .85;
       }
-      .form-control, .btn { border-radius: 10px; }
-      .btn-primary { background: #2563eb; border-color: #2563eb; }
-      .btn-primary:hover { background: #1d4ed8; border-color: #1d4ed8; }
-      .footer-note { color: #94a3b8; }
-    </style>
-  </head>
-  <body>
-    <div class="container py-5">
-      <div class="row justify-content-center">
-        <div class="col-12 col-md-8 col-lg-5">
-          <div class="p-4 p-md-5 login-card shadow-sm">
-            <div class="text-center mb-4">
-              <img src="{% static 'logo.png' %}" alt="Logo" style="width: 50px; height: 50px;"> 
-              <div class="brand h4 mb-1">SPS School</div>
-              <div class="footer-note small">Acesse com seu usuário e senha</div>
+
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    #fakeProgressWrap {
+      height: 7px;
+      background: rgba(148, 163, 184, .18);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 14px;
+      display: none;
+      box-shadow: inset 0 0 8px rgba(0, 0, 0, .35);
+    }
+
+    #fakeProgressBar {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg,
+          #2563eb,
+          #60a5fa,
+          #93c5fd,
+          #60a5fa,
+          #2563eb);
+      background-size: 220% 100%;
+      box-shadow: 0 0 14px rgba(96, 165, 250, .8);
+      transition: width .35s ease;
+      animation: progressGlow 1.2s linear infinite;
+    }
+
+    @keyframes progressGlow {
+      0% {
+        background-position: 0% 50%;
+      }
+
+      100% {
+        background-position: 220% 50%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-8 col-lg-5">
+        <div class="p-4 p-md-5 login-card shadow-sm">
+          <div class="text-center mb-4">
+            <img src="{% static 'logo.png' %}" alt="Logo" style="width: 50px; height: 50px;">
+            <div class="brand h4 mb-1">SPS School</div>
+            <div class="footer-note small">Acesse com seu usuário e senha</div>
+          </div>
+
+          <div id="alert" class="alert d-none" role="alert"></div>
+
+          <form id="loginForm" novalidate>
+            <div class="mb-3">
+              <label for="username" class="form-label"><i class="bi bi-person"></i> Usuário</label>
+              <input type="text" class="form-control" id="username" placeholder="seu.usuario" required>
             </div>
-
-            <div id="alert" class="alert d-none" role="alert"></div>
-
-            <form id="loginForm" novalidate>
-              <div class="mb-3">
-                <label for="username" class="form-label">Usuário</label>
-                <input type="text" class="form-control" id="username" placeholder="seu.usuario" required>
-              </div>
-              <div class="mb-4">
-                <label for="password" class="form-label">Senha</label>
-                <input type="password" class="form-control" id="password" placeholder="••••••••" required>
-              </div>
-              <button type="submit" class="btn btn-primary w-100 py-2">Entrar</button>
-            </form>
-
-            <div class="mt-4 text-center footer-note">
-              <small>Precisa de ajuda? Fale com o suporte.</small>
+            <div class="mb-4">
+              <label for="password" class="form-label"><i class="bi bi-lock"></i> Senha</label>
+              <input type="password" class="form-control" id="password" placeholder="••••••••" required>
             </div>
+            <button type="submit" class="btn btn-primary w-100 py-2" id="loginBtn">Entrar</button>
+          </form>
+          <div id="fakeProgressWrap">
+            <div id="fakeProgressBar"></div>
+          </div>
+
+          <div class="mt-4 text-center footer-note">
+            <small>Precisa de ajuda? Fale com o suporte.</small>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <script>
-      const alertBox = document.getElementById('alert');
-      const showAlert = (message, type = 'info') => {
-        alertBox.className = `alert alert-${type}`;
-        alertBox.textContent = message;
-        alertBox.classList.remove('d-none');
-      };
+  <script>
+    const alertBox = document.getElementById('alert');
+    const showAlert = (message, type = 'info') => {
+      alertBox.className = `alert alert-${type}`;
+      alertBox.textContent = message;
+      alertBox.classList.remove('d-none');
+    };
 
-      // Util para capturar o cookie CSRF definido pelo Django
-      function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
+    // Util para capturar o cookie CSRF definido pelo Django
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+      return null;
+    }
+    const loginBtn = document.getElementById('loginBtn');
+    const fakeProgressWrap = document.getElementById('fakeProgressWrap');
+    const fakeProgressBar = document.getElementById('fakeProgressBar');
+    let progressInterval = null;
+
+    function startLoginLoading() {
+      loginBtn.disabled = true;
+      loginBtn.classList.add('btn-loading');
+      loginBtn.innerHTML = `
+    <span class="spinner-border spinner-border-sm me-2"></span>
+    Entrando...
+  `;
+
+      fakeProgressWrap.style.display = 'block';
+      fakeProgressBar.style.width = '0%';
+
+      let progress = 0;
+
+      progressInterval = setInterval(() => {
+        if (progress < 85) {
+          progress += Math.floor(Math.random() * 12) + 4;
+          if (progress > 85) progress = 85;
+          fakeProgressBar.style.width = `${progress}%`;
+        }
+      }, 300);
+    }
+
+    function stopLoginLoading() {
+      clearInterval(progressInterval);
+      progressInterval = null;
+
+      loginBtn.disabled = false;
+      loginBtn.classList.remove('btn-loading');
+      loginBtn.innerHTML = 'Entrar';
+
+      fakeProgressBar.style.width = '0%';
+      fakeProgressWrap.style.display = 'none';
+    }
+
+    function finishLoginLoading() {
+      clearInterval(progressInterval);
+      progressInterval = null;
+
+      fakeProgressBar.style.width = '100%';
+    }
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alertBox.classList.add('d-none');
+      loginBtn.disabled = true;
+      loginBtn.innerHTML = `
+    <span class="spinner-border spinner-border-sm me-2"></span>
+    Entrando...
+  `;
+      startLoginLoading();
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!username || !password) {
+        showAlert('Informe usuário e senha.', 'warning');
+        return;
       }
 
-      document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        alertBox.classList.add('d-none');
+      try {
+        // 1) Login de sessão para templates web
+        const csrftoken = getCookie('csrftoken');
 
-        const username = document.getElementById('username').value.trim();
-        const password = document.getElementById('password').value;
+        const sessionResp = await fetch('/api/auth/session-login/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken || ''
+          },
+          credentials: 'same-origin',
+          body: JSON.stringify({ username, password })
+        });
 
-        if (!username || !password) {
-          showAlert('Informe usuário e senha.', 'warning');
+        const sessionData = await sessionResp.json();
+        if (!sessionResp.ok || !sessionData?.sucesso) {
+          const mensagem = sessionData?.mensagem || 'Falha na autenticação';
+          showAlert(mensagem, 'danger');
           return;
         }
 
+        // 2) Opcional: obter tokens JWT (para futuras chamadas via JS)
         try {
-          // 1) Login de sessão para templates web
-          const csrftoken = getCookie('csrftoken');
-
-          const sessionResp = await fetch('/api/auth/session-login/', {
+          const jwtResp = await fetch('/api/auth/login/', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -99,43 +258,28 @@
             credentials: 'same-origin',
             body: JSON.stringify({ username, password })
           });
-
-          const sessionData = await sessionResp.json();
-          if (!sessionResp.ok || !sessionData?.sucesso) {
-            const mensagem = sessionData?.mensagem || 'Falha na autenticação';
-            showAlert(mensagem, 'danger');
-            return;
+          const jwtData = await jwtResp.json();
+          if (jwtResp.ok && jwtData?.sucesso) {
+            const { access, refresh } = jwtData.dados?.tokens || {};
+            localStorage.setItem('sps_access_token', access || '');
+            localStorage.setItem('sps_refresh_token', refresh || '');
           }
+        } catch { }
 
-          // 2) Opcional: obter tokens JWT (para futuras chamadas via JS)
-          try {
-            const jwtResp = await fetch('/api/auth/login/', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrftoken || ''
-              },
-              credentials: 'same-origin',
-              body: JSON.stringify({ username, password })
-            });
-            const jwtData = await jwtResp.json();
-            if (jwtResp.ok && jwtData?.sucesso) {
-              const { access, refresh } = jwtData.dados?.tokens || {};
-              localStorage.setItem('sps_access_token', access || '');
-              localStorage.setItem('sps_refresh_token', refresh || '');
-            }
-          } catch {}
+        showAlert('Login realizado com sucesso. Redirecionando...', 'success');
+        setTimeout(() => {
+          window.location.href = '/home/';
+        }, 600);
+      } catch (err) {
+        console.error(err);
+        showAlert('Erro de conexão com o servidor.', 'danger');
+      }
+    });
 
-          showAlert('Login realizado com sucesso. Redirecionando...', 'success');
-          setTimeout(() => {
-            window.location.href = '/home/';
-          }, 600);
-        } catch (err) {
-          console.error(err);
-          showAlert('Erro de conexão com o servidor.', 'danger');
-        }
-      });
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  </body>
+
+
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
 </html>
