@@ -62,7 +62,18 @@ class SpartView(APIView):
         except Exception:
             pass
         if 'text/event-stream' in accept:
-            return self._streaming_response(request, slug)
+            try:
+                return self._streaming_response(request, slug)
+            except Exception as e:
+                logger.exception("[KHRONOS_CHAT] falha no streaming, fallback para JSON")
+                return Response(
+                    {
+                        "erro": "Falha no modo streaming",
+                        "detalhe": str(e),
+                        "fallback": "json"
+                    },
+                    status=200
+                )
         
         return self._standard_response(request, slug)
 
@@ -285,105 +296,113 @@ Ela já faz o roteamento inteligente para a tool correta.""")
         """STREAMING via Server-Sent Events"""
         
         async def generate():
-            client = OpenAI()
-            inicio = time.time()
-            agenteReact, AGENT_TOOLS, faiss_cached, pre_rotear, metricas, gerar_descricao_tools = _lazy_agente_refs()
-            
-
-            empresa_id = request.META.get("HTTP_X_EMPRESA", 1)
-            filial_id = request.META.get("HTTP_X_FILIAL", 1)
-            thread_id = str(getattr(request.user, "usua_codi", request.user.id))
-            log_ctx = f"empresa={empresa_id} filial={filial_id} thread={thread_id}"
-            logger.info(f"[KHRONOS_CHAT_STREAM] inicio {log_ctx}")
-            
-            config = RunnableConfig(
-                recursion_limit=50,
-                configurable={
-                "thread_id": thread_id,
-                "empresa_id": str(empresa_id),
-                "filial_id": str(filial_id)
-            })
-            yield f"data: {json.dumps({'tipo': 'status', 'mensagem': 'Pensando...'})}\n\n"
-            yield f"data: {json.dumps({'tipo': 'contexto_sessao', 'empresa_id': str(empresa_id), 'filial_id': str(filial_id) })}\n\n"
-            
-            # Entrada
-            mensagem_usuario = self._processar_entrada(request, client)
-            if isinstance(mensagem_usuario, Response):
-                yield f"data: {json.dumps({'erro': 'Erro na entrada'})}\n\n"
-                return
-            logger.info(f"[KRHONUS_CHAT_STREAM] entrada tamanho={len(mensagem_usuario or '')} {log_ctx}")
-            
-            # Pré-roteador
-            rota = pre_rotear(mensagem_usuario)
-            yield f"data: {json.dumps({'tipo': 'rota', 'valor': rota['tipo'], 'confianca': rota['confianca']})}\n\n"
-            yield f"data: {json.dumps({'tipo': 'status', 'mensagem': 'Buscando tool para a pergunta...'})}\n\n"
-            
-            # FAISS condicional
-            contexto_faiss = None
-            if rota["precisa_faiss"]:
-                yield f"data: {json.dumps({'tipo': 'status', 'mensagem': 'Buscando contexto...'})}\n\n"
-                contexto_faiss = faiss_cached(mensagem_usuario)
+            try:
+                client = OpenAI()
+                inicio = time.time()
+                agenteReact, AGENT_TOOLS, faiss_cached, pre_rotear, metricas, gerar_descricao_tools = _lazy_agente_refs()
+                
+                # Contexto
+                slug, banco = self._get_slug_and_db(request, slug_param=slug)
+                empresa_id = request.META.get("HTTP_X_EMPRESA", 1)
+                filial_id = request.META.get("HTTP_X_FILIAL", 1)
+                thread_id = str(getattr(request.user, "usua_codi", request.user.id))
+                log_ctx = f"slug={slug} banco={banco} empresa={empresa_id} filial={filial_id} thread={thread_id}"
+                logger.info(f"[KRHONUS_CHAT_STREAM] inicio {log_ctx}")
+                
+                config = RunnableConfig(
+                    recursion_limit=50,
+                    configurable={
+                    "thread_id": thread_id,
+                    "empresa_id": str(empresa_id),
+                    "filial_id": str(filial_id),
+                    "banco": banco,
+                    "slug": slug,
+                })
+                yield f"data: {json.dumps({'tipo': 'status', 'mensagem': 'Pensando...'})}\n\n"
+                yield f"data: {json.dumps({'tipo': 'contexto_sessao', 'banco': banco, 'empresa_id': str(empresa_id), 'filial_id': str(filial_id), 'slug': slug})}\n\n"
+                
+                # Entrada
+                mensagem_usuario = self._processar_entrada(request, client)
+                if isinstance(mensagem_usuario, Response):
+                    yield f"data: {json.dumps({'erro': 'Erro na entrada'})}\n\n"
+                    return
+                logger.info(f"[KRHONUS_CHAT_STREAM] entrada tamanho={len(mensagem_usuario or '')} {log_ctx}")
+                
+                # Pré-roteador
+                rota = pre_rotear(mensagem_usuario)
+                yield f"data: {json.dumps({'tipo': 'rota', 'valor': rota['tipo'], 'confianca': rota['confianca']})}\n\n"
+                yield f"data: {json.dumps({'tipo': 'status', 'mensagem': 'Buscando tool para a pergunta...'})}\n\n"
+                
+                # FAISS condicional
+                contexto_faiss = None
+                if rota["precisa_faiss"]:
+                    yield f"data: {json.dumps({'tipo': 'status', 'mensagem': 'Buscando contexto...'})}\n\n"
+                    contexto_faiss = faiss_cached(mensagem_usuario)
+                    if contexto_faiss:
+                        yield f"data: {json.dumps({'tipo': 'contexto', 'status': 'ok'})}\n\n"
+                
+                # Prompt
+                prompt_parts = []
                 if contexto_faiss:
-                    yield f"data: {json.dumps({'tipo': 'contexto', 'status': 'ok'})}\n\n"
-            
-            # Prompt
-            prompt_parts = []
-            if contexto_faiss:
-                prompt_parts.append(f"📎 Contexto:\n{contexto_faiss}\n")
-            prompt_parts.append(f"""
-📍 Empresa: {empresa_id} | Filial: {filial_id}
+                    prompt_parts.append(f"📎 Contexto:\n{contexto_faiss}\n")
+                prompt_parts.append(f"""
+📍 Empresa: {empresa_id} | Filial: {filial_id} | Banco: {banco}
 💬 {mensagem_usuario}
 
 ⚡ Use 'executar_intencao' como primeira opção.""")
-            prompt = "\n".join(prompt_parts)
-            
-            # Stream do agente
-            resposta_completa = []
-            tools_usadas = []
-            
-            async for event in agenteReact.astream_events(
-                {"messages": [HumanMessage(content=prompt)]},
-                config,
-                version="v2"
-            ):
-                kind = event["event"]
+                prompt = "\n".join(prompt_parts)
                 
-                # Stream de tokens
-                if kind == "on_chat_model_stream":
-                    chunk = event["data"]["chunk"]
-                    if hasattr(chunk, 'content') and chunk.content:
-                        texto = chunk.content
-                        resposta_completa.append(texto)
-                        yield f"data: {json.dumps({'tipo': 'chunk', 'texto': texto})}\n\n"
+                # Stream do agente
+                resposta_completa = []
+                tools_usadas = []
                 
-                # Tools executadas
-                elif kind == "on_tool_start":
-                    tool_name = event.get("name", "desconhecida")
-                    tools_usadas.append(tool_name)
-                    yield f"data: {json.dumps({'tipo': 'tool', 'nome': tool_name})}\n\n"
+                async for event in agenteReact.astream_events(
+                    {"messages": [HumanMessage(content=prompt)]},
+                    config,
+                    version="v2"
+                ):
+                    kind = event["event"]
+                    
+                    # Stream de tokens
+                    if kind == "on_chat_model_stream":
+                        chunk = event["data"]["chunk"]
+                        if hasattr(chunk, 'content') and chunk.content:
+                            texto = chunk.content
+                            resposta_completa.append(texto)
+                            yield f"data: {json.dumps({'tipo': 'chunk', 'texto': texto})}\n\n"
+                    
+                    # Tools executadas
+                    elif kind == "on_tool_start":
+                        tool_name = event.get("name", "desconhecida")
+                        tools_usadas.append(tool_name)
+                        yield f"data: {json.dumps({'tipo': 'tool', 'nome': tool_name})}\n\n"
+                    
+                    elif kind == "on_tool_end":
+                        tool_name = event.get("name", "")
+                        yield f"data: {json.dumps({'tipo': 'tool_fim', 'nome': tool_name})}\n\n"
                 
-                elif kind == "on_tool_end":
-                    tool_name = event.get("name", "")
-                    yield f"data: {json.dumps({'tipo': 'tool_fim', 'nome': tool_name})}\n\n"
-            
-            # Finaliza
-            texto_final = "".join(resposta_completa)
-            tempo_total = round(time.time() - inicio, 2)
-            logger.info(f"[KRHONUS_CHAT_STREAM] fim tempo_total_s={tempo_total} tools={','.join(tools_usadas) if tools_usadas else 'nenhuma'} {log_ctx}")
+                # Finaliza
+                texto_final = "".join(resposta_completa)
+                tempo_total = round(time.time() - inicio, 2)
+                logger.info(f"[KRHONUS_CHAT_STREAM] fim tempo_total_s={tempo_total} tools={','.join(tools_usadas) if tools_usadas else 'nenhuma'} {log_ctx}")
 
-            # Evita f-string multilinha (quebra parsing). Monta payload antes.
-            payload_fim = {
-                'tipo': 'fim',
-                'resposta': texto_final,
-                'tempo_total': tempo_total,
-                'tools_usadas': tools_usadas,
-            }
-            yield f"data: {json.dumps(payload_fim)}\n\n"
-            
-            # TTS (opcional)
-            audio_base64 = self._gerar_audio_otimizado(client, texto_final)
-            if audio_base64:
-                yield f"data: {json.dumps({'tipo': 'audio', 'data': audio_base64})}\n\n"
+                # Evita f-string multilinha (quebra parsing). Monta payload antes.
+                payload_fim = {
+                    'tipo': 'fim',
+                    'resposta': texto_final,
+                    'tempo_total': tempo_total,
+                    'tools_usadas': tools_usadas,
+                }
+                yield f"data: {json.dumps(payload_fim)}\n\n"
+                
+                # TTS (opcional)
+                audio_base64 = self._gerar_audio_otimizado(client, texto_final)
+                if audio_base64:
+                    yield f"data: {json.dumps({'tipo': 'audio', 'data': audio_base64})}\n\n"
+            except Exception as e:
+                logger.exception("[KRHONUS_CHAT_STREAM] erro no processamento")
+                yield f"data: {json.dumps({'tipo': 'erro', 'mensagem': str(e)[:500]})}\n\n"
+                yield f"data: {json.dumps({'tipo': 'fim', 'resposta': 'Não foi possível concluir em streaming. Tente novamente.'})}\n\n"
         
         # Converte async para sync
         def sync_generator():
