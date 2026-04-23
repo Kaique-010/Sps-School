@@ -37,3 +37,5 @@ jobs:
             sudo systemctl restart gunicorn
             sudo systemctl reload nginx
           EOF
+
+# deploy atualizado
