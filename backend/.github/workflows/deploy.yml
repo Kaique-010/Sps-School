@@ -18,15 +18,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+    shell: bash
+    run: |
+      mkdir -p ~/.ssh
+      printf "%s" "${{ secrets.SSH_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
+      chmod 600 ~/.ssh/id_rsa
+      ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Deploy no servidor
+        shell: bash
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << 'EOF'
             set -e
             cd /home/ubuntu/Sps-School/backend
             source ../venv/bin/activate
@@ -37,5 +39,3 @@ jobs:
             sudo systemctl restart gunicorn
             sudo systemctl reload nginx
           EOF
-
-# deploy atualizado
