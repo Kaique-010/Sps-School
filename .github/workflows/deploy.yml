@@ -1,138 +1,41 @@
-name: Deploy Mobile e Web-SPS (Blue/Green) Servidores
+name: Deploy Production
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy.yml'
 
 jobs:
-  mirror:
-    name: Mirror via GitHub App
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout completo (com histórico)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Gerar Installation Token (GitHub App)
-        id: app-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.GH_APP_ID }}
-          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-          owner: spartacusWeb25
-          repositories: mobile-sps
-
-      - name: Espelhar para o repositório mirror (sem workflows)
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          set -euo pipefail
-
-          TARGET_REPO="spartacusWeb25/mobile-sps"
-
-          rm -rf .github/workflows
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Remove workflows for mirror" || true
-
-          git remote remove mirror 2>/dev/null || true
-          git remote add mirror "https://x-access-token:${GH_TOKEN}@github.com/${TARGET_REPO}.git"
-          git push mirror main --force
-
   deploy:
-    name: Deploy Blue/Green (via Mirror)
-    needs: mirror
     runs-on: ubuntu-latest
-    environment: Mobile-Sps
+    environment: SPS-SCHOOL
 
     steps:
-      - name: Deploy via SSH (Blue/Green - Mirror)
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.ORACLE_HOST }}
-          username: ${{ secrets.ORACLE_USER }}
-          key: ${{ secrets.ORACLE_SSH_KEY }}
-          command_timeout: 30m
-          timeout: 30m
-          script: |
-            set -euo pipefail
+      - name: Checkout
+        uses: actions/checkout@v4
 
-            BASE=/home/ubuntu/mobile-sps
-            REPO=$BASE/repo
-            REPO_URL=https://github.com/spartacusWeb25/mobile-sps.git
+      - name: Setup SSH
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
-            mkdir -p "$BASE"
-
-            if ! command -v python3.11 &> /dev/null; then
-              sudo apt update
-              sudo apt install -y python3.11 python3.11-venv python3.11-dev
-            fi
-
-            sudo apt-get install -y libgl1 || (sudo apt-get update && sudo apt-get install -y libgl1)
-
-            if [ ! -d "$REPO/.git" ]; then
-              rm -rf "$REPO"
-              git clone "$REPO_URL" "$REPO"
-            fi
-
-            cd "$REPO"
-            git fetch origin
-            git reset --hard origin/main
-
-            if [ -L "$BASE/current" ]; then
-              CURRENT=$(readlink -f "$BASE/current")
-            else
-              CURRENT="$BASE/blue"
-            fi
-
-            [[ "$CURRENT" == *blue ]] && TARGET="$BASE/green" || TARGET="$BASE/blue"
-
-            rsync -av --delete \
-              --exclude ".git" \
-              --exclude "__pycache__" \
-              "$REPO/" "$TARGET/"
-
-            [ -f "$BASE/.env" ] && cp "$BASE/.env" "$TARGET/.env"
-
-            VENV_PYTHON_VERSION=""
-            if [ -f "$BASE/venv/bin/python" ]; then
-              VENV_PYTHON_VERSION=$("$BASE/venv/bin/python" --version 2>&1 | awk '{print $2}' | cut -d. -f1,2)
-            fi
-
-            if [ ! -d "$BASE/venv" ] || [ "$VENV_PYTHON_VERSION" != "3.11" ]; then
-              rm -rf "$BASE/venv"
-              python3.11 -m venv "$BASE/venv"
-              source "$BASE/venv/bin/activate"
-              pip install --upgrade pip setuptools wheel
-            else
-              source "$BASE/venv/bin/activate"
-            fi
-
-            REQ_HASH=$(sha256sum "$TARGET/requirements.txt" | awk '{print $1}')
-            if [ ! -f "$BASE/.req_hash" ] || [ "$REQ_HASH" != "$(cat "$BASE/.req_hash")" ]; then
-              pip install -r "$TARGET/requirements.txt"
-              echo "$REQ_HASH" > "$BASE/.req_hash"
-            fi
-
-            ln -sfn "$TARGET" "$BASE/current"
-
-            sudo systemctl daemon-reload
+      - name: Deploy no servidor
+        shell: bash
+        run: |
+          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << 'EOF'
+            set -e
+            cd /home/ubuntu/Sps-School/backend
+            source ../venv/bin/activate
+            git pull origin main
+            pip install -r requirements.txt
+            python manage.py migrate
+            python manage.py collectstatic --noinput
             sudo systemctl restart gunicorn
-            sudo systemctl restart nginx
-
-            sleep 5
-
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/health/ || echo "000")
-            if [ "$STATUS" != "200" ]; then
-              echo "Health check falhou (Status: $STATUS)"
-              sudo systemctl status gunicorn --no-pager
-              sudo systemctl status nginx --no-pager
-              exit 1
-            fi
-
-            echo "Deploy concluído com sucesso!"
+            sudo systemctl reload nginx
+          EOF
