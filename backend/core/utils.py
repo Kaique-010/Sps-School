@@ -2,6 +2,7 @@
 
 import logging
 import sys
+from django.conf import settings
 
 # ANSI colors
 RESET = "\033[0m"
@@ -52,3 +53,16 @@ def configurar_logger_colorido():
     root = logging.getLogger()
     root.handlers = [handler]
     root.setLevel(logging.DEBUG)
+
+
+def get_db_from_slug(slug: str | None, default: str = "default") -> str:
+    """
+    Resolve o alias do banco a partir de um slug.
+    Se o slug não existir na configuração, retorna `default`.
+    """
+    if not slug:
+        return default
+
+    slug_normalizado = str(slug).strip().lower()
+    dbs = getattr(settings, "DATABASES", {})
+    return slug_normalizado if slug_normalizado in dbs else default

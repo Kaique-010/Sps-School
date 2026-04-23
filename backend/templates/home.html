@@ -773,6 +773,21 @@
         setPensandoTexto(texto);
     }
 
+    async function authFetch(url, options = {}) {
+        const token = localStorage.getItem('sps_access_token');
+        const slug = localStorage.getItem('slug');
+
+        const headers = new Headers(options.headers || {});
+        if (token) headers.set('Authorization', `Bearer ${token}`);
+        if (slug) headers.set('X-Entidade', slug);
+
+        return fetch(url, {
+            ...options,
+            headers,
+            credentials: 'same-origin'
+        });
+    }
+
     async function enviarMsg(texto) {
         historico.push({ tipo: 'user', texto });
         setPensando(true, 'Pensando...');
@@ -780,15 +795,47 @@
 
         try {
             const slug = localStorage.getItem('slug');
+            const endpoints = [];
+            if (slug && slug !== 'null' && slug !== 'undefined') {
+                endpoints.push(`/api/${slug}/assistente/chat/`);
+            }
+            endpoints.push('/api/khronos/chat/');
 
-            const resp = await authFetch(`/api/${slug}/assistente/chat/`, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'text/event-stream',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ mensagem: texto })
-            });
+            let resp = null;
+            let endpointUtilizado = null;
+            let ultimoErro = null;
+
+            for (const endpoint of endpoints) {
+                endpointUtilizado = endpoint;
+                resp = await authFetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'text/event-stream',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ mensagem: texto })
+                });
+
+                if (resp.ok) break;
+
+                let corpoErro = '';
+                try {
+                    corpoErro = await resp.text();
+                } catch (e) {}
+
+                ultimoErro = `Erro HTTP ${resp.status} em ${endpoint}${corpoErro ? `: ${corpoErro.slice(0, 500)}` : ''}`;
+
+                if (resp.status >= 500 && endpoint !== endpoints[endpoints.length - 1]) {
+                    continue;
+                }
+                break;
+            }
+
+            if (!resp) {
+                historico.push({ tipo: 'spart', texto: ultimoErro || 'Falha ao chamar endpoint do Kronos.' });
+                setPensando(false);
+                return;
+            }
 
             const ctype = (resp.headers.get('content-type') || '').toLowerCase();
 
@@ -854,14 +901,9 @@
             }
 
             if (!resp.ok) {
-                let corpo = '';
-                try {
-                    corpo = await resp.text();
-                } catch (e) {}
-
                 historico.push({
                     tipo: 'spart',
-                    texto: `Erro HTTP ${resp.status}${corpo ? `: ${corpo.slice(0, 500)}` : ''}`
+                    texto: ultimoErro || `Erro HTTP ${resp.status} em ${endpointUtilizado}`
                 });
 
                 setPensando(false);
