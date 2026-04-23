@@ -2,3 +2,6 @@ venv
 .venv
 .env
 env
+# SQLite
+backend/db.sqlite3
+*.sqlite3
