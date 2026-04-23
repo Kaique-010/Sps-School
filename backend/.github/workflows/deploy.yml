@@ -1,266 +1,34 @@
-name: Deploy Sps School
+name: Deploy Production
 
 on:
   push:
-    branches: ['main']
+    branches:
+      - main
 
 jobs:
-  mirror:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout completo
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: 🔍 Debug - Verificar Secrets e Variáveis
-        run: |
-          echo "============================================"
-          echo "🔍 DEBUG - INFORMAÇÕES DO REPOSITÓRIO"
-          echo "============================================"
-          echo "Repositório atual: ${{ github.repository }}"
-          echo "Branch: ${{ github.ref }}"
-          echo "SHA: ${{ github.sha }}"
-          echo ""
-          echo "============================================"
-          echo "🔑 DEBUG - VERIFICAÇÃO DOS SECRETS"
-          echo "============================================"
-          echo "TOKEN_SPARTACUS existe: ${{ secrets.MIRROR_TOKEN_SPARTACUS != '' }}"
-          echo "TOKEN_KAIQUE existe: ${{ secrets.MIRROR_TOKEN_KAIQUE010 != '' }}"
-          echo "Tamanho TOKEN_SPARTACUS: ${#TOKEN_SPARTACUS}"
-          echo "Tamanho TOKEN_KAIQUE: ${#TOKEN_KAIQUE}"
-          echo "Primeiros 4 chars TOKEN_SPARTACUS: ${TOKEN_SPARTACUS:0:4}..."
-          echo "Últimos 4 chars TOKEN_SPARTACUS: ...${TOKEN_SPARTACUS: -4}"
-          echo ""
-          echo "============================================"
-          echo "🎯 DEBUG - LÓGICA DO ESPELHAMENTO"
-          echo "============================================"
-          if [ "${{ github.repository }}" = "Kaique-010/mobile-sps" ]; then
-            echo "✅ Detectado: Repositório Kaique-010/mobile-sps"
-            echo "🎯 Destino: spartacusWeb25/mobile-sps"
-            echo "🔑 Token usado: MIRROR_TOKEN_SPARTACUS"
-          else
-            echo "✅ Detectado: Repositório spartacusWeb25/mobile-sps"
-            echo "🎯 Destino: Kaique-010/mobile-sps"
-            echo "🔑 Token usado: MIRROR_TOKEN_KAIQUE010"
-          fi
-          echo "============================================"
-        env:
-          TOKEN_SPARTACUS: ${{ secrets.MIRROR_TOKEN_SPARTACUS }}
-          TOKEN_KAIQUE: ${{ secrets.MIRROR_TOKEN_KAIQUE010 }}
-
-      - name: Espelhar para o outro repositório
-        continue-on-error: false
-        env:
-          REPO: ${{ github.repository }}
-          TOKEN_SPARTACUS: ${{ secrets.MIRROR_TOKEN_SPARTACUS }}
-          TOKEN_KAIQUE: ${{ secrets.MIRROR_TOKEN_KAIQUE010 }}
-        run: |
-          echo "🚀 Iniciando espelhamento..."
-          echo "Repositório origem: $REPO"
-
-          # Debug: verificar tokens recebidos
-          echo "Debug - TOKEN_SPARTACUS length: ${#TOKEN_SPARTACUS}"
-          echo "Debug - TOKEN_KAIQUE length: ${#TOKEN_KAIQUE}"
-
-          if [ "$REPO" = "Kaique-010/mobile-sps" ]; then
-            echo "📍 Rota: Kaique-010 → spartacusWeb25"
-            
-            if [ -z "$TOKEN_SPARTACUS" ] || [ "${#TOKEN_SPARTACUS}" -lt 10 ]; then
-              echo "❌ ERRO: TOKEN_SPARTACUS está vazio ou inválido!"
-              echo "Tamanho: ${#TOKEN_SPARTACUS}"
-              exit 1
-            fi
-            
-            echo "✅ Token SPARTACUS válido (${#TOKEN_SPARTACUS} caracteres)"
-            MIRROR_TOKEN="$TOKEN_SPARTACUS"
-            TARGET_REPO="spartacusWeb25/mobile-sps"
-            
-          else
-            echo "📍 Rota: spartacusWeb25 → Kaique-010"
-            
-            if [ -z "$TOKEN_KAIQUE" ] || [ "${#TOKEN_KAIQUE}" -lt 10 ]; then
-              echo "❌ ERRO: TOKEN_KAIQUE está vazio ou inválido!"
-              echo "Tamanho: ${#TOKEN_KAIQUE}"
-              exit 1
-            fi
-            
-          echo "Token KAIQUE válido (${#TOKEN_KAIQUE} caracteres)"
-          MIRROR_TOKEN="$TOKEN_KAIQUE"
-          TARGET_REPO="Kaique-010/mobile-sps"
-          fi
-
-          # 🚫 NÃO ESPELHAR WORKFLOWS
-          echo "🧹 Removendo .github/workflows do espelhamento..."
-          rm -rf .github/workflows
-
-          # Testar 3 formatos diferentes de URL
-          echo ""
-          echo "🔗 Tentando 3 formatos de autenticação..."
-
-
-          # Formato 1: x-access-token
-          echo "📌 Formato 1: x-access-token"
-          TARGET_URL="https://x-access-token:${MIRROR_TOKEN}@github.com/${TARGET_REPO}.git"
-          git remote remove mirror 2>/dev/null || true
-          git remote add mirror "$TARGET_URL"
-
-          if git push mirror main --verbose 2>&1; then
-            echo "✅ Sucesso com formato x-access-token!"
-            exit 0
-          fi
-
-          echo "⚠️ Formato 1 falhou, tentando formato 2..."
-
-          # Formato 2: token direto
-          echo "📌 Formato 2: token direto"
-          TARGET_URL="https://${MIRROR_TOKEN}@github.com/${TARGET_REPO}.git"
-          git remote set-url mirror "$TARGET_URL"
-
-          if git push mirror main --verbose 2>&1; then
-            echo "✅ Sucesso com token direto!!!"
-            exit 0
-          fi
-
-          echo "⚠️ Formato 2 falhou, tentando formato 3..."
-
-          # Formato 3: oauth2
-          echo "📌 Formato 3: oauth2"
-          TARGET_URL="https://oauth2:${MIRROR_TOKEN}@github.com/${TARGET_REPO}.git"
-          git remote set-url mirror "$TARGET_URL"
-
-          if git push mirror main --verbose 2>&1; then
-            echo "✅ Sucesso com oauth2!"
-            exit 0
-          fi
-
-          echo ""
-          echo "❌ Todos os formatos falharam!"
-          echo "Possíveis causas:"
-          echo "  1. Token sem permissão 'repo' completa"
-          echo "  2. Token expirado"
-          echo "  3. Repositório ${TARGET_REPO} não existe"
-          echo "  4. Token não pertence ao usuário dono do repo"
-          echo "  5. Token tem espaços ou caracteres invisíveis"
-          echo ""
-          echo "🔧 Sugestões:"
-          echo "  - Gere um NOVO token"
-          echo "  - Certifique-se de copiar TODO o token (sem espaços)"
-          echo "  - Marque APENAS a permissão 'repo'"
-          echo "  - Use o token do usuário DONO do repositório"
-          exit 1
-
   deploy:
-    needs: mirror
     runs-on: ubuntu-latest
-    environment: Mobile-Sps
 
     steps:
-      - name: Checkout do código
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Cache pip
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.ORACLE_HOST }}
-          username: ${{ secrets.ORACLE_USER }}
-          key: ${{ secrets.ORACLE_SSH_KEY }}
-          command_timeout: 30m
-          timeout: 30m
-          script: |
-            BASE=/home/ubuntu/mobile-sps
-            REPO=$BASE/repo
-            REPO_URL=https://github.com/${{ github.repository }}.git
-
-            if [ ! -d "$REPO/.git" ]; then
-              rm -rf $REPO
-              mkdir -p $REPO
-              git clone $REPO_URL $REPO
-            else
-              cd $REPO
-              git fetch origin
-              git reset --hard origin/main
-            fi
-
-            if [ -L "$BASE/current" ]; then
-              CURRENT=$(readlink -f $BASE/current)
-            else
-              CURRENT="$BASE/blue"
-            fi
-
-            [[ "$CURRENT" == *"blue"* ]] && TARGET="$BASE/green" || TARGET="$BASE/blue"
-
-            rsync -av --delete --exclude ".git" --exclude "__pycache__" $REPO/ $TARGET/
-
-            [ -f "$BASE/.env" ] && cp $BASE/.env $TARGET/.env
-
-            source $BASE/venv/bin/activate
-
-            REQ_HASH=$(sha256sum $TARGET/requirements.txt | awk '{print $1}')
-            if [ ! -f "$BASE/.req_hash" ] || [ "$REQ_HASH" != "$(cat $BASE/.req_hash)" ]; then
-              pip install -r $TARGET/requirements.txt
-              echo "$REQ_HASH" > $BASE/.req_hash
-            fi
-
-            lsof -t -i:9000 | xargs -r kill -9 || true
-            sleep 2
-
-            cd $TARGET
-            gunicorn core.wsgi:application --bind 127.0.0.1:9000 --daemon --pid guni_test.pid
-            sleep 10
-
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9000/health/ || echo "000")
-            [ "$STATUS" != "200" ] && kill $(cat guni_test.pid) && exit 1
-
-            kill $(cat guni_test.pid)
-            rm -f guni_test.pid
-
-            ln -sfn $TARGET $BASE/current
+      - name: Deploy no servidor
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            cd /home/ubuntu/Sps-School/backend
+            source ../venv/bin/activate
+            git pull origin main
+            pip install -r requirements.txt
+            python manage.py migrate
+            python manage.py collectstatic --noinput
             sudo systemctl restart gunicorn
-            sudo systemctl restart daphne
-
-      - name: Email — Sucesso
-        if: success()
-        uses: dawidd6/action-send-mail@v4
-        continue-on-error: true
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          secure: true
-          username: ${{ secrets.SMTP_USER }}
-          password: ${{ secrets.SMTP_PASSWORD }}
-          subject: 'Deploy SPS — Sucesso (#${{ github.run_number }})'
-          to: ${{ secrets.SMTP_USER }}
-          from: ${{ secrets.SMTP_USER }}
-          body: |
-            Deploy concluído com sucesso.
-            Código atualizado web e mobile.
-            Repo: ${{ github.repository }}
-            SHA: ${{ github.sha }}
-
-      - name: Email — Falha
-        if: failure()
-        uses: dawidd6/action-send-mail@v4
-        continue-on-error: true
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          secure: true
-          username: ${{ secrets.SMTP_USER }}
-          password: ${{ secrets.SMTP_PASSWORD }}
-          subject: 'Deploy SPS — Falha (#${{ github.run_number }})'
-          to: ${{ secrets.SMTP_USER }}
-          from: ${{ secrets.SMTP_USER }}
-          body: |
-            Deploy falhou.
-            Repo: ${{ github.repository }}
-            SHA: ${{ github.sha }}
+            sudo systemctl reload nginx
+          EOF
