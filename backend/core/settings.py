@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'central_treinamentos',
     'tkts',
+    'Assistente_Khronos',
 ]
 
 MIDDLEWARE = [
