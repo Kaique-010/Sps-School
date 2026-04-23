@@ -773,6 +773,21 @@
         setPensandoTexto(texto);
     }
 
+    async function authFetch(url, options = {}) {
+        const token = localStorage.getItem('sps_access_token');
+        const slug = localStorage.getItem('slug');
+
+        const headers = new Headers(options.headers || {});
+        if (token) headers.set('Authorization', `Bearer ${token}`);
+        if (slug) headers.set('X-Entidade', slug);
+
+        return fetch(url, {
+            ...options,
+            headers,
+            credentials: 'same-origin'
+        });
+    }
+
     async function enviarMsg(texto) {
         historico.push({ tipo: 'user', texto });
         setPensando(true, 'Pensando...');
@@ -780,8 +795,11 @@
 
         try {
             const slug = localStorage.getItem('slug');
+            const endpoint = slug
+                ? `/api/${slug}/assistente/chat/`
+                : '/api/khronos/chat/';
 
-            const resp = await authFetch(`/api/${slug}/assistente/chat/`, {
+            const resp = await authFetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Accept': 'text/event-stream',

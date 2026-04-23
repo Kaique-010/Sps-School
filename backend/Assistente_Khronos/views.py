@@ -8,7 +8,7 @@ from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 from openai import OpenAI
 import base64, tempfile, logging, time, json, asyncio
-from core.utils import configurar_logger_colorido
+from core.utils import configurar_logger_colorido, get_db_from_slug
 
 configurar_logger_colorido()
 logger = logging.getLogger(__name__)
@@ -41,6 +41,17 @@ class SpartView(APIView):
     # Suporta JSON (mensagens) e multipart/form-data (áudio)
     parser_classes = [JSONParser, FormParser, MultiPartParser]
 
+    def _get_slug_and_db(self, request, slug_param=None):
+        slug = (
+            slug_param
+            or request.headers.get("X-Entidade")
+            or request.headers.get("X-Slug")
+            or request.query_params.get("slug")
+            or "default"
+        )
+        banco = get_db_from_slug(slug)
+        return slug, banco
+
     def post(self, request, slug=None):
         inicio_total = time.time()
         
@@ -71,11 +82,10 @@ class SpartView(APIView):
         agenteReact, AGENT_TOOLS, faiss_cached, pre_rotear, metricas, gerar_descricao_tools = _lazy_agente_refs()
 
         # ======== CONTEXTO ========
-        slug = get_licenca_slug()
-        banco = get_licenca_db_config(request)
+        slug, banco = self._get_slug_and_db(request, slug_param=slug)
         empresa_id = request.META.get("HTTP_X_EMPRESA", 1)
         filial_id = request.META.get("HTTP_X_FILIAL", 1)
-        thread_id = str(request.user.usua_codi)
+        thread_id = str(getattr(request.user, "usua_codi", request.user.id))
         log_ctx = f"slug={slug} banco={banco} empresa={empresa_id} filial={filial_id} thread={thread_id}"
         logger.info(f"[KRHONUS_CHAT] inicio {log_ctx}")
 
@@ -282,11 +292,10 @@ Ela já faz o roteamento inteligente para a tool correta.""")
             agenteReact, AGENT_TOOLS, faiss_cached, pre_rotear, metricas, gerar_descricao_tools = _lazy_agente_refs()
             
             # Contexto
-            slug = get_licenca_slug()
-            banco = get_licenca_db_config(request)
+            slug, banco = self._get_slug_and_db(request, slug_param=slug)
             empresa_id = request.META.get("HTTP_X_EMPRESA", 1)
             filial_id = request.META.get("HTTP_X_FILIAL", 1)
-            thread_id = str(request.user.usua_codi)
+            thread_id = str(getattr(request.user, "usua_codi", request.user.id))
             log_ctx = f"slug={slug} banco={banco} empresa={empresa_id} filial={filial_id} thread={thread_id}"
             logger.info(f"[KRHONUS_CHAT_STREAM] inicio {log_ctx}")
             
