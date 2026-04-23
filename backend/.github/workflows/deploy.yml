@@ -24,6 +24,7 @@ jobs:
       - name: Deploy no servidor
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            set -e
             cd /home/ubuntu/Sps-School/backend
             source ../venv/bin/activate
             git pull origin main
