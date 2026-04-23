@@ -36,8 +36,6 @@ def executar_intencao(
     - Visualização do cérebro semântico (mapa semântico, pca/tsne) -> plotar_mapa_semantico
     - Perguntas gerais/documentação -> CONTEXTO JÁ FORNECIDO, retorna orientação
     """
-
-    logger.info(f"[EXECUTAR_INTENCAO] Banco: {real_banco} | Empresa: {empresa_id} | Filial: {filial_id}")
     msg_lower = mensagem.lower()
     
 
@@ -117,7 +115,7 @@ def executar_intencao(
         )
 
     # ========== NENHUMA INTENÇÃO CLARA ==========
-    logger.warning("[EXECUTAR_INTENCAO] Nenhuma intenção identificada")
+    logger.warning(f"[KHRONOS_CHAT] Nenhuma intenção identificada {log_ctx}")
     return (
         "Não identifiquei a intenção. Exemplos:\n"
         "- Pesquisa: 'buscar na web ...'"

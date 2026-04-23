@@ -4,9 +4,18 @@ from pathlib import Path
 from decouple import config  
 from django.utils.timezone import timedelta
 import os
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+
+
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*').split(',')

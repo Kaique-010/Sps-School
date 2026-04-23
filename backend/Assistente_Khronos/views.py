@@ -82,12 +82,12 @@ class SpartView(APIView):
         agenteReact, AGENT_TOOLS, faiss_cached, pre_rotear, metricas, gerar_descricao_tools = _lazy_agente_refs()
 
         # ======== CONTEXTO ========
-        slug, banco = self._get_slug_and_db(request, slug_param=slug)
+        
         empresa_id = request.META.get("HTTP_X_EMPRESA", 1)
         filial_id = request.META.get("HTTP_X_FILIAL", 1)
         thread_id = str(getattr(request.user, "usua_codi", request.user.id))
-        log_ctx = f"slug={slug} banco={banco} empresa={empresa_id} filial={filial_id} thread={thread_id}"
-        logger.info(f"[KRHONUS_CHAT] inicio {log_ctx}")
+        log_ctx = f"empresa={empresa_id} filial={filial_id} thread={thread_id}"
+        logger.info(f"[KHRONOS_CHAT] inicio {log_ctx}") 
 
         config = RunnableConfig(
             recursion_limit=50,
@@ -95,15 +95,14 @@ class SpartView(APIView):
             "thread_id": thread_id,
             "empresa_id": str(empresa_id),
             "filial_id": str(filial_id),
-            "banco": banco,
-            "slug": slug,
+     
         })
 
         # ======== ENTRADA ========
         mensagem_usuario = self._processar_entrada(request, client)
         if isinstance(mensagem_usuario, Response):
             return mensagem_usuario
-        logger.info(f"[KRHONUS_CHAT] entrada tamanho={len(mensagem_usuario or '')} {log_ctx}")
+        logger.info(f"[KHRONOS_CHAT] entrada tamanho={len(mensagem_usuario or '')} {log_ctx}")
 
         # ======== PRÉ-ROTEADOR (50-100ms) ========
         inicio_pre_roteador = time.time()
@@ -119,10 +118,10 @@ class SpartView(APIView):
             try:
                 contexto_faiss = faiss_cached(mensagem_usuario)
                 tempo_faiss = round(time.time() - inicio_faiss, 2)
-                logger.info(f"[KRHONUS_CHAT] faiss ok tempo_s={tempo_faiss} tamanho={len(contexto_faiss or '')} {log_ctx}")
+                logger.info(f"[KHRONOS_CHAT] faiss ok tempo_s={tempo_faiss} tamanho={len(contexto_faiss or '')} {log_ctx}")
                 metricas.registrar("faiss", tempo_faiss)
             except Exception as e:
-                logger.warning(f"[KRHONUS_CHAT] faiss erro={str(e)} {log_ctx}")
+                logger.warning(f"[KHRONOS_CHAT] faiss erro={str(e)} {log_ctx}")
         else:
             pass
 
@@ -137,8 +136,7 @@ class SpartView(APIView):
 📍 Informações da sessão:
 - Empresa: {empresa_id}
 - Filial: {filial_id}
-- Banco: {banco}
-- Slug: {slug}
+
 
 💬 Pergunta do usuário:
 {mensagem_usuario}
@@ -163,7 +161,7 @@ Ela já faz o roteamento inteligente para a tool correta.""")
             )
             
             tempo_agente = round(time.time() - inicio_agente, 2)
-            logger.info(f"[KRHONUS_CHAT] agente ok tempo_s={tempo_agente} {log_ctx}")
+            logger.info(f"[KHRONOS_CHAT] agente ok tempo_s={tempo_agente} {log_ctx}")
             metricas.registrar("agente", tempo_agente)
             
             # Extração robusta de mensagens
@@ -171,7 +169,7 @@ Ela já faz o roteamento inteligente para a tool correta.""")
             
             if not mensagens:
                 resposta_texto = "⚠️ O agente não retornou mensagens."
-                logger.warning("[AGENTE] Resultado vazio")
+                logger.warning(f"[KHRONOS_CHAT] Resultado vazio {log_ctx}")
             else:
                 for msg in mensagens:
                     msg_type = msg.__class__.__name__
@@ -208,15 +206,15 @@ Ela já faz o roteamento inteligente para a tool correta.""")
                 
                 # logger.info(f"🔧 Tools executadas: {tools_usadas or ['nenhuma']}")
                 if tools_usadas:
-                    logger.info(f"[KRHONUS_CHAT] tools {','.join(tools_usadas)} {log_ctx}")
+                            logger.info(f"[KHRONOS_CHAT] tools {','.join(tools_usadas)} {log_ctx}")
                 
                 # Validação final
                 if not resposta_texto or resposta_texto.strip() == "":
                     resposta_texto = "⚠️ O agente não gerou uma resposta textual."
-                    logger.warning("[AGENTE] Resposta vazia após processamento")
+                    logger.warning(f"[KHRONOS_CHAT] Resposta vazia após processamento {log_ctx}")
 
         except Exception as e:
-            logger.exception("[AGENTE] Erro detalhado")
+            logger.exception("[KHRONOS_CHAT] Erro detalhado")
             
             error_str = str(e)
             
@@ -226,7 +224,7 @@ Ela já faz o roteamento inteligente para a tool correta.""")
                     "⚠️ Ocorreu um problema no histórico de conversa. "
                     "Por favor, reformule sua pergunta de forma mais específica."
                 )
-                logger.error(f"[AGENTE] Erro de histórico: {error_str}")
+                logger.error(f"[KHRONOS_CHAT] Erro de histórico: {error_str}")
                 
                 # Limpa o histórico se possível
                 try:
@@ -291,25 +289,22 @@ Ela já faz o roteamento inteligente para a tool correta.""")
             inicio = time.time()
             agenteReact, AGENT_TOOLS, faiss_cached, pre_rotear, metricas, gerar_descricao_tools = _lazy_agente_refs()
             
-            # Contexto
-            slug, banco = self._get_slug_and_db(request, slug_param=slug)
+
             empresa_id = request.META.get("HTTP_X_EMPRESA", 1)
             filial_id = request.META.get("HTTP_X_FILIAL", 1)
             thread_id = str(getattr(request.user, "usua_codi", request.user.id))
-            log_ctx = f"slug={slug} banco={banco} empresa={empresa_id} filial={filial_id} thread={thread_id}"
-            logger.info(f"[KRHONUS_CHAT_STREAM] inicio {log_ctx}")
+            log_ctx = f"empresa={empresa_id} filial={filial_id} thread={thread_id}"
+            logger.info(f"[KHRONOS_CHAT_STREAM] inicio {log_ctx}")
             
             config = RunnableConfig(
                 recursion_limit=50,
                 configurable={
                 "thread_id": thread_id,
                 "empresa_id": str(empresa_id),
-                "filial_id": str(filial_id),
-                "banco": banco,
-                "slug": slug,
+                "filial_id": str(filial_id)
             })
             yield f"data: {json.dumps({'tipo': 'status', 'mensagem': 'Pensando...'})}\n\n"
-            yield f"data: {json.dumps({'tipo': 'contexto_sessao', 'banco': banco, 'empresa_id': str(empresa_id), 'filial_id': str(filial_id), 'slug': slug})}\n\n"
+            yield f"data: {json.dumps({'tipo': 'contexto_sessao', 'empresa_id': str(empresa_id), 'filial_id': str(filial_id) })}\n\n"
             
             # Entrada
             mensagem_usuario = self._processar_entrada(request, client)
@@ -336,7 +331,7 @@ Ela já faz o roteamento inteligente para a tool correta.""")
             if contexto_faiss:
                 prompt_parts.append(f"📎 Contexto:\n{contexto_faiss}\n")
             prompt_parts.append(f"""
-📍 Empresa: {empresa_id} | Filial: {filial_id} | Banco: {banco}
+📍 Empresa: {empresa_id} | Filial: {filial_id}
 💬 {mensagem_usuario}
 
 ⚡ Use 'executar_intencao' como primeira opção.""")
