@@ -301,12 +301,11 @@ Ela já faz o roteamento inteligente para a tool correta.""")
                 inicio = time.time()
                 agenteReact, AGENT_TOOLS, faiss_cached, pre_rotear, metricas, gerar_descricao_tools = _lazy_agente_refs()
                 
-                # Contexto
-                slug, banco = self._get_slug_and_db(request, slug_param=slug)
+                
                 empresa_id = request.META.get("HTTP_X_EMPRESA", 1)
                 filial_id = request.META.get("HTTP_X_FILIAL", 1)
                 thread_id = str(getattr(request.user, "usua_codi", request.user.id))
-                log_ctx = f"slug={slug} banco={banco} empresa={empresa_id} filial={filial_id} thread={thread_id}"
+                log_ctx = f"empresa={empresa_id}, filial={filial_id}, thread={thread_id}"
                 logger.info(f"[KRHONUS_CHAT_STREAM] inicio {log_ctx}")
                 
                 config = RunnableConfig(
@@ -315,11 +314,10 @@ Ela já faz o roteamento inteligente para a tool correta.""")
                     "thread_id": thread_id,
                     "empresa_id": str(empresa_id),
                     "filial_id": str(filial_id),
-                    "banco": banco,
-                    "slug": slug,
+                  
                 })
                 yield f"data: {json.dumps({'tipo': 'status', 'mensagem': 'Pensando...'})}\n\n"
-                yield f"data: {json.dumps({'tipo': 'contexto_sessao', 'banco': banco, 'empresa_id': str(empresa_id), 'filial_id': str(filial_id), 'slug': slug})}\n\n"
+                yield f"data: {json.dumps({'tipo': 'contexto_sessao', 'empresa_id': str(empresa_id), 'filial_id': str(filial_id)})}\n\n"
                 
                 # Entrada
                 mensagem_usuario = self._processar_entrada(request, client)
@@ -346,7 +344,7 @@ Ela já faz o roteamento inteligente para a tool correta.""")
                 if contexto_faiss:
                     prompt_parts.append(f"📎 Contexto:\n{contexto_faiss}\n")
                 prompt_parts.append(f"""
-📍 Empresa: {empresa_id} | Filial: {filial_id} | Banco: {banco}
+📍 Empresa: {empresa_id} | Filial: {filial_id}
 💬 {mensagem_usuario}
 
 ⚡ Use 'executar_intencao' como primeira opção.""")
