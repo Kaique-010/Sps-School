@@ -32,7 +32,9 @@ jobs:
             set -e
             cd /home/ubuntu/Sps-School/backend
             source ../venv/bin/activate
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
+            git clean -fd
             pip install -r requirements.txt
             python manage.py migrate
             python manage.py collectstatic --noinput
