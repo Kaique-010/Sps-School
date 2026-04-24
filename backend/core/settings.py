@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'central_treinamentos',
     'tkts',
     'Assistente_Khronos',
+    'central_web',
 ]
 
 MIDDLEWARE = [

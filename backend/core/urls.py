@@ -26,6 +26,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('autenticacao.urls')),
     path('api/treinamentos/', include('central_treinamentos.urls')),
+    path('api/central_web/', include('central_web.urls')),
     path('tkts/', include('tkts.urls')),
     path('api/khronos/', include('Assistente_Khronos.urls')),
     path('api/<slug:slug>/assistente/', include('Assistente_Khronos.urls')),

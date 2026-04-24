@@ -14,6 +14,8 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.shortcuts import redirect, render
 from .serializers import LoginSerializer, UsuarioSerializer, UsuarioPerfilSerializer
 from central_treinamentos.models import Modulo, Treinamento, ProgressoTreinamento
+from central_web.models import Modulo, Treinamento
+
 
 
 class LoginView(APIView):
@@ -84,8 +86,9 @@ class HomeView(View):
     def get(self, request):
         # Contagens gerais
         total_modulos = Modulo.objects.count()
+        total_modulos_web = Modulo.objects.count()
         total_treinamentos = Treinamento.objects.count()
-        
+        total_treinamentos_web = Treinamento.objects.count()
 
         # Progresso do usuário
         completed_treinamentos = 0
@@ -96,8 +99,11 @@ class HomeView(View):
 
         context = {
             'modulos': Modulo.objects.prefetch_related('treinamentos').all(),
+            'modulos_web': Modulo.objects.prefetch_related('treinamentos').all(),
             'total_modulos': total_modulos,
+            'total_modulos_web': total_modulos_web,
             'total_treinamentos': total_treinamentos,
+            'total_treinamentos_web': total_treinamentos_web,
             'completed_treinamentos': completed_treinamentos,
         }
 

@@ -12,6 +12,14 @@
         --kronos-border: rgba(0, 191, 255, 0.22);
         --kronos-text: #e5f3ff;
         --kronos-text-soft: #94a3b8;
+        --home-card-grad-dark-main: linear-gradient(135deg, #0b0f18 0%, #223969 52%, #36476d 100%);
+        --home-card-grad-dark-alt: linear-gradient(135deg, #3b214c 0%, #321418 52%, #7a3e7f 100%);
+        --home-card-grad-light-main: linear-gradient(135deg, #ffffff 0%, #edf4ff 55%, #d6e8ff 100%);
+        --home-card-grad-light-alt: linear-gradient(135deg, #ffffff 0%, #f9efff 55%, #f1dbff 100%);
+        --home-card-border-dark: rgba(123, 162, 255, 0.24);
+        --home-card-border-light: rgba(110, 153, 216, 0.2);
+        --home-card-text-light: #1a3158;
+        --home-card-text-soft-light: #4f678c;
     }
 
     .card-corporate {
@@ -27,9 +35,188 @@
         transition: transform .2s ease, box-shadow .2s ease;
     }
 
+    .home-feature-card {
+        border-radius: 18px;
+        border: 1px solid var(--home-card-border-dark);
+        color: #f8fbff;
+        background: var(--home-card-grad-dark-main);
+        background-color: #223969;
+        box-shadow: 0 16px 36px rgba(10, 20, 40, 0.3);
+        transition: transform .2s ease, box-shadow .2s ease;
+    }
+
+    .home-feature-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 42px rgba(10, 20, 40, 0.38);
+    }
+
+    .home-feature-card--alt {
+        background: var(--home-card-grad-dark-alt);
+        background-color: #5c2f66;
+        box-shadow: 0 16px 36px rgba(37, 17, 46, 0.3);
+    }
+
+    .home-feature-card--alt:hover {
+        box-shadow: 0 20px 42px rgba(37, 17, 46, 0.38);
+    }
+
+    .home-feature-card .card-title,
+    .home-feature-card .card-text,
+    .home-feature-card i {
+        color: #fff !important;
+    }
+
+    .home-feature-card .card-text {
+        opacity: .92;
+    }
+
+    .home-feature-icon {
+        background: linear-gradient(135deg, #9cc8ff 0%, #d7a8ff 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent !important;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 6px 16px rgba(133, 173, 255, 0.28));
+    }
+
+    .home-feature-card--alt .home-feature-icon {
+        background: linear-gradient(135deg, #ffb0d3 0%, #ffd0a8 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent !important;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 6px 16px rgba(255, 159, 201, 0.28));
+    }
+
+    .stats-card {
+        color: #fff;
+        border: 1px solid var(--home-card-border-dark);
+        background: var(--home-card-grad-dark-alt);
+        background-color: #5c2f66;
+        box-shadow: 0 16px 36px rgba(37, 17, 46, 0.28);
+    }
+
     .stats-card:hover {
         transform: translateY(-3px);
-        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 20px 42px rgba(37, 17, 46, 0.36);
+    }
+
+    .stats-card:nth-of-type(even) {
+        background: var(--home-card-grad-dark-main);
+        background-color: #223969;
+        box-shadow: 0 16px 36px rgba(10, 20, 40, 0.3);
+    }
+
+    .stats-card:nth-of-type(even):hover {
+        box-shadow: 0 20px 42px rgba(10, 20, 40, 0.38);
+    }
+
+    .stats-card .card-title,
+    .stats-card .card-text,
+    .stats-card i {
+        color: #fff;
+    }
+
+    .home-stat-icon {
+        background: linear-gradient(135deg, #ffb2d6 0%, #ffd7a8 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 6px 16px rgba(255, 159, 201, 0.24));
+    }
+
+    .stats-card:nth-of-type(even) .home-stat-icon {
+        background: linear-gradient(135deg, #9cc8ff 0%, #b8b2ff 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 6px 16px rgba(133, 173, 255, 0.24));
+    }
+
+    [data-theme="light"] .home-feature-card {
+        border-color: var(--home-card-border-light);
+        background: var(--home-card-grad-light-main);
+        background-color: #edf4ff;
+        box-shadow: 0 14px 28px rgba(151, 181, 219, 0.22);
+        color: var(--home-card-text-light);
+    }
+
+    [data-theme="light"] .home-feature-card--alt {
+        background: var(--home-card-grad-light-alt);
+        background-color: #f9efff;
+        box-shadow: 0 14px 28px rgba(190, 158, 221, 0.2);
+    }
+
+    [data-theme="light"] .home-feature-card .card-title,
+    [data-theme="light"] .home-feature-card .card-text,
+    [data-theme="light"] .home-feature-card i {
+        color: var(--home-card-text-light) !important;
+    }
+
+    [data-theme="light"] .home-feature-card .card-text {
+        color: var(--home-card-text-soft-light) !important;
+    }
+
+    [data-theme="light"] .home-feature-icon {
+        background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent !important;
+        -webkit-text-fill-color: transparent;
+        filter: none;
+    }
+
+    [data-theme="light"] .home-feature-card--alt .home-feature-icon {
+        background: linear-gradient(135deg, #db2777 0%, #f97316 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent !important;
+        -webkit-text-fill-color: transparent;
+        filter: none;
+    }
+
+    [data-theme="light"] .stats-card {
+        border-color: var(--home-card-border-light);
+        background: var(--home-card-grad-light-alt);
+        background-color: #f9efff;
+        box-shadow: 0 14px 28px rgba(190, 158, 221, 0.2);
+        color: var(--home-card-text-light);
+    }
+
+    [data-theme="light"] .stats-card:nth-of-type(even) {
+        background: var(--home-card-grad-light-main);
+        background-color: #edf4ff;
+        box-shadow: 0 14px 28px rgba(151, 181, 219, 0.22);
+    }
+
+    [data-theme="light"] .stats-card .card-title,
+    [data-theme="light"] .stats-card .card-text,
+    [data-theme="light"] .stats-card i {
+        color: var(--home-card-text-light);
+    }
+
+    [data-theme="light"] .stats-card .card-text {
+        color: var(--home-card-text-soft-light);
+    }
+
+    [data-theme="light"] .home-stat-icon {
+        background: linear-gradient(135deg, #db2777 0%, #f97316 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+        filter: none;
+    }
+
+    [data-theme="light"] .stats-card:nth-of-type(even) .home-stat-icon {
+        background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+        filter: none;
     }
 
     .kronos-fab {
@@ -105,6 +292,7 @@
             transform: scale(1);
             opacity: .8;
         }
+
         100% {
             transform: scale(1.12);
             opacity: 0;
@@ -287,10 +475,14 @@
     }
 
     @keyframes kronosDot {
-        0%, 80%, 100% {
+
+        0%,
+        80%,
+        100% {
             opacity: .35;
             transform: scale(.8);
         }
+
         40% {
             opacity: 1;
             transform: scale(1.25);
@@ -306,10 +498,12 @@
             transform: scale(1);
             box-shadow: 0 0 0 0 rgba(0, 191, 255, .25);
         }
+
         50% {
             transform: scale(1.08);
             box-shadow: 0 0 0 10px rgba(0, 191, 255, 0);
         }
+
         100% {
             transform: scale(1);
             box-shadow: 0 0 0 0 rgba(0, 191, 255, 0);
@@ -329,7 +523,7 @@
     }
 
     .kronos-bubble code {
-        background: rgba(255,255,255,.08);
+        background: rgba(255, 255, 255, .08);
         padding: 2px 6px;
         border-radius: 6px;
         color: #c7f0ff;
@@ -368,6 +562,9 @@
 </style>
 
 <div class="container py-3">
+    <div class="text-center mt-3 mb-2">
+        <img src="{% static 'logo.png' %}" alt="SPS" style="width: 72px; height: 72px; object-fit: contain;">
+    </div>
     <h1 class="text-center mt-3">
         <img src="{% static 'logo.png' %}" alt="Logo" style="width: 50px; height: 50px;">
         Bem-vindo {{ user.username }}
@@ -380,10 +577,10 @@
             </div>
 
             <div class="col-md-4 mb-4">
-                <div class="card h-100 border-0 shadow-sm">
+                <div class="card h-100 border-0 shadow-sm home-feature-card">
                     <div class="card-body text-center p-4">
                         <div class="mb-3">
-                            <i class="bi bi-play-circle-fill text-primary" style="font-size: 3rem;"></i>
+                            <i class="bi bi-play-circle-fill home-feature-icon" style="font-size: 3rem;"></i>
                         </div>
                         <h5 class="card-title">Vídeos Interativos</h5>
                         <p class="card-text">
@@ -395,10 +592,10 @@
             </div>
 
             <div class="col-md-4 mb-4">
-                <div class="card h-100 border-0 shadow-sm">
+                <div class="card h-100 border-0 shadow-sm home-feature-card home-feature-card--alt">
                     <div class="card-body text-center p-4">
                         <div class="mb-3">
-                            <i class="bi bi-collection-fill text-success" style="font-size: 3rem;"></i>
+                            <i class="bi bi-collection-fill home-feature-icon" style="font-size: 3rem;"></i>
                         </div>
                         <h5 class="card-title">Módulos Organizados</h5>
                         <p class="card-text">
@@ -410,10 +607,10 @@
             </div>
 
             <div class="col-md-4 mb-4">
-                <div class="card h-100 border-0 shadow-sm">
+                <div class="card h-100 border-0 shadow-sm home-feature-card">
                     <div class="card-body text-center p-4">
                         <div class="mb-3">
-                            <i class="bi bi-award-fill text-warning" style="font-size: 3rem;"></i>
+                            <i class="bi bi-award-fill home-feature-icon" style="font-size: 3rem;"></i>
                         </div>
                         <h5 class="card-title">Material de Apoio</h5>
                         <p class="card-text">
@@ -434,7 +631,7 @@
             <div class="col-md-4 mb-4">
                 <div class="card stats-card border-0">
                     <div class="card-body text-center">
-                        <i class="bi bi-collection display-6 mb-2"></i>
+                        <i class="bi bi-collection display-6 mb-2 home-stat-icon"></i>
                         <h4 class="card-title">{{ total_modulos|default:0 }}</h4>
                         <p class="card-text">Módulos Disponíveis</p>
                     </div>
@@ -444,7 +641,7 @@
             <div class="col-md-4 mb-4">
                 <div class="card stats-card border-0">
                     <div class="card-body text-center">
-                        <i class="bi bi-play-circle display-6 mb-2"></i>
+                        <i class="bi bi-play-circle display-6 mb-2 home-stat-icon"></i>
                         <h4 class="card-title">{{ total_treinamentos|default:0 }}</h4>
                         <p class="card-text">Treinamentos</p>
                     </div>
@@ -454,7 +651,7 @@
             <div class="col-md-4 mb-4">
                 <div class="card stats-card border-0">
                     <div class="card-body text-center">
-                        <i class="bi bi-check-circle display-6 mb-2"></i>
+                        <i class="bi bi-check-circle display-6 mb-2 home-stat-icon"></i>
                         <h4 class="card-title">{{ completed_treinamentos|default:0 }}</h4>
                         <p class="card-text">Concluídos</p>
                     </div>
@@ -487,7 +684,8 @@
                     </div>
                 </div>
 
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Fechar"></button>
             </div>
 
             <div class="modal-body kronos-modal__body">
@@ -503,13 +701,8 @@
                 </div>
 
                 <div class="input-group kronos-input-wrap">
-                    <input
-                        id="mensagemInput"
-                        type="text"
-                        class="form-control kronos-input"
-                        placeholder="Pergunte algo para o Kronos..."
-                        autocomplete="off"
-                    />
+                    <input id="mensagemInput" type="text" class="form-control kronos-input"
+                        placeholder="Pergunte algo para o Kronos..." autocomplete="off" />
                     <button id="enviarMensagem" class="btn btn-info kronos-send" type="button">
                         Enviar
                     </button>
@@ -532,7 +725,7 @@
             if (slugTpl && (!localStorage.getItem('slug') || localStorage.getItem('slug') !== slugTpl)) {
                 localStorage.setItem('slug', slugTpl);
             }
-        } catch (e) {}
+        } catch (e) { }
 
         const modalEl = document.getElementById('kronosModal');
         if (modalEl && window.bootstrap) {
@@ -735,8 +928,8 @@
 
         try {
             const audio = new Audio(`data:audio/mp3;base64,${base64}`);
-            audio.play().catch(() => {});
-        } catch (e) {}
+            audio.play().catch(() => { });
+        } catch (e) { }
     }
 
     async function consumirSSE(resp, onEvent) {
@@ -762,7 +955,7 @@
 
                     try {
                         onEvent(JSON.parse(payload));
-                    } catch (e) {}
+                    } catch (e) { }
                 }
             }
         }
@@ -821,7 +1014,7 @@
                 let corpoErro = '';
                 try {
                     corpoErro = await resp.text();
-                } catch (e) {}
+                } catch (e) { }
 
                 ultimoErro = `Erro HTTP ${resp.status} em ${endpoint}${corpoErro ? `: ${corpoErro.slice(0, 500)}` : ''}`;
 
@@ -913,7 +1106,7 @@
             let data = null;
             try {
                 data = await resp.json();
-            } catch (e) {}
+            } catch (e) { }
 
             if (!data) {
                 historico.push({ tipo: 'spart', texto: 'Resposta inválida do servidor.' });
