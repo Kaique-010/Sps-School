@@ -89,6 +89,7 @@ class HomeView(View):
         total_modulos_web = Modulo.objects.count()
         total_treinamentos = Treinamento.objects.count()
         total_treinamentos_web = Treinamento.objects.count()
+        
 
         # Progresso do usuário
         completed_treinamentos = 0
