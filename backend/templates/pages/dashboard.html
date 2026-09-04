@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% block title %}Painel de Implantações{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <h2 class="mb-1"><i class="bi bi-diagram-3 me-2"></i>Painel de Implantações</h2>
+            <p class="text-muted mb-0">Acompanhe o andamento das implantações em andamento.</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'implantacao:implantacao_nova' %}" class="btn btn-primary me-2">
+                <i class="bi bi-plus-lg me-1"></i>Nova Implantação
+            </a>
+            <a href="{% url 'implantacao:implantacao_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-list-ul me-1"></i>Listar Todas
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="sps-stat-card">
+                <div class="sps-stat-card__icon blue"><i class="bi bi-diagram-3"></i></div>
+                <div>
+                    <div class="sps-stat-card__num">{{ stats.total }}</div>
+                    <div class="sps-stat-card__label">Total</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="sps-stat-card">
+                <div class="sps-stat-card__icon amber"><i class="bi bi-hourglass-split"></i></div>
+                <div>
+                    <div class="sps-stat-card__num">{{ stats.nao_iniciado }}</div>
+                    <div class="sps-stat-card__label">Não Iniciadas</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="sps-stat-card">
+                <div class="sps-stat-card__icon blue"><i class="bi bi-rocket-takeoff"></i></div>
+                <div>
+                    <div class="sps-stat-card__num">{{ stats.em_andamento }}</div>
+                    <div class="sps-stat-card__label">Em Andamento</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="sps-stat-card">
+                <div class="sps-stat-card__icon green"><i class="bi bi-check2-circle"></i></div>
+                <div>
+                    <div class="sps-stat-card__num">{{ stats.finalizado }}</div>
+                    <div class="sps-stat-card__label">Finalizadas</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card p-4">
+                <h5 class="mb-3"><i class="bi bi-signpost-split me-2"></i>Fluxo Padrão de Etapas</h5>
+                <div class="d-flex flex-wrap gap-2 align-items-stretch">
+                    {% for nome, info in etapas_pipeline.items %}
+                    <div class="d-flex align-items-center impl-etapa-node">
+                        <div class="impl-etapa-circle d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                             data-status="{% if info.concluida %}concluida{% elif info.andamento %}andamento{% else %}pendente{% endif %}">
+                            {% if info.concluida %}<i class="bi bi-check-lg"></i>
+                            {% elif info.andamento %}<i class="bi bi-play-fill"></i>
+                            {% else %}<i class="bi bi-circle"></i>{% endif %}
+                        </div>
+                        <div class="ms-2">
+                            <div class="impl-etapa-nome">{{ nome }}</div>
+                            <div class="small impl-etapa-texto">{{ info.texto }}</div>
+                        </div>
+                    </div>
+                    {% if not forloop.last %}
+                    <div class="impl-etapa-chevron mx-1 d-flex align-items-center">
+                        <i class="bi bi-chevron-right"></i>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Últimas Implantações</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Cód.</th>
+                                <th>Cliente</th>
+                                <th>Implantador</th>
+                                <th>Status</th>
+                                <th>Etapa Atual</th>
+                                <th>Progresso</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for imp, prog in ultimas %}
+                            <tr>
+                                <td class="small text-muted">#{{ imp.id }}</td>
+                                <td>
+                                    <div class="fw-semibold">{{ imp.cliente }}</div>
+                                    <div class="small text-muted">{{ imp.codigo_cliente }} · {{ imp.documento_cliente }}</div>
+                                </td>
+                                <td>{{ imp.implantador|default:"—" }}</td>
+                                <td>
+                                    {% with s=imp.status %}
+                                    <span class="badge rounded-pill
+                                        {% if s == 'nao_iniciado' %}bg-secondary{% elif s == 'em_andamento' %}bg-info text-dark{% elif s == 'finalizado' %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ imp.get_status_display }}
+                                    </span>
+                                    {% endwith %}
+                                </td>
+                                <td>{{ prog.etapa_atual }}</td>
+                                <td style="min-width: 180px;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 8px;">
+                                            <div class="progress-bar bg-info" role="progressbar"
+                                                 style="width: {{ prog.percentual }}%;"
+                                                 aria-valuenow="{{ prog.percentual }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <small class="text-muted" style="min-width: 36px;">{{ prog.percentual }}%</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <a href="{% url 'implantacao:implantacao_detail' imp.pk %}" class="btn btn-sm btn-outline-primary">
+                                        Detalhes <i class="bi bi-arrow-right ms-1"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">
+                                    Nenhuma implantação cadastrada ainda.<br>
+                                    <a href="{% url 'implantacao:implantacao_nova' %}" class="btn btn-sm btn-primary mt-2">Criar primeira implantação</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

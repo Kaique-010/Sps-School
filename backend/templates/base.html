@@ -7,9 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}SPS Training System{% endblock %}</title>
 
-        <link rel="icon" type="image/png" href="{% static 'logo.png' %}">
+    <link rel="icon" type="image/png" href="{% static 'logo.png' %}">
 
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
@@ -50,6 +50,298 @@
             --sps-border: rgba(0, 0, 0, 0.08);
             --sps-text: #1a2035;
             --sps-text-soft: #5a6a82;
+        }
+
+        /* ===== Light mode: cards e stat cards ===== */
+        [data-theme="light"] .card {
+            background: #ffffff;
+            border-color: rgba(15, 23, 42, 0.08);
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+        }
+
+        [data-theme="light"] .card-header {
+            background: #fafbfe;
+            border-bottom-color: rgba(15, 23, 42, 0.06);
+        }
+
+        [data-theme="light"] .sps-stat-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f7faff 100%);
+            border: 1px solid rgba(15, 23, 42, 0.07);
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+        }
+
+        [data-theme="light"] .sps-stat-card:nth-of-type(even) {
+            background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+            border-color: rgba(0, 191, 255, 0.14);
+            box-shadow: 0 6px 18px rgba(56, 189, 248, 0.09);
+        }
+
+        [data-theme="light"] .sps-stat-card__num,
+        [data-theme="light"] .sps-stat-card__label {
+            color: #1a2035;
+        }
+
+        [data-theme="light"] .sps-stat-card:hover {
+            border-color: rgba(0, 191, 255, 0.32);
+            box-shadow: 0 10px 24px rgba(56, 189, 248, 0.12);
+        }
+
+        [data-theme="light"] .sps-feature-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f7faff 100%);
+            border: 1px solid rgba(15, 23, 42, 0.07);
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+        }
+
+        [data-theme="light"] .sps-feature-card:nth-of-type(even) {
+            background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+            border-color: rgba(0, 191, 255, 0.14);
+            box-shadow: 0 6px 18px rgba(56, 189, 248, 0.09);
+        }
+
+        /* ===== Dark mode refinements ===== */
+        [data-theme="dark"] .sps-stat-card {
+            color: var(--sps-text);
+        }
+
+        [data-theme="dark"] .table {
+            --bs-table-bg: transparent;
+            --bs-table-color: var(--sps-text);
+            --bs-table-border-color: var(--sps-border);
+            --bs-table-hover-bg: rgba(255, 255, 255, 0.03);
+        }
+
+        [data-theme="dark"] .table thead {
+            color: var(--sps-text-soft);
+        }
+
+        [data-theme="dark"] .table tbody tr td,
+        [data-theme="dark"] .table tbody tr th {
+            border-top-color: rgba(255, 255, 255, 0.05);
+            color: var(--sps-text);
+        }
+
+        [data-theme="dark"] .table-light,
+        [data-theme="dark"] table .table-light {
+            --bs-table-bg: rgba(255, 255, 255, 0.04);
+            --bs-table-color: var(--sps-text);
+        }
+
+        [data-theme="dark"] .list-group-item {
+            background: transparent;
+            color: var(--sps-text);
+            border-color: var(--sps-border);
+        }
+
+        [data-theme="dark"] .accordion-button {
+            background: transparent;
+            color: var(--sps-text);
+        }
+
+        [data-theme="dark"] .accordion-button:not(.collapsed) {
+            background: rgba(0, 191, 255, 0.06);
+            color: var(--sps-text);
+            box-shadow: inset 0 calc(-1 * var(--bs-accordion-border-width)) 0 var(--sps-border);
+        }
+
+        [data-theme="dark"] .accordion-button::after {
+            filter: invert(0.8);
+        }
+
+        [data-theme="dark"] .accordion-item {
+            background: transparent;
+            border-color: var(--sps-border);
+            color: var(--sps-text);
+        }
+
+        [data-theme="dark"] .accordion-body {
+            color: var(--sps-text);
+        }
+
+        [data-theme="dark"] .modal-content {
+            background: var(--sps-surface);
+            color: var(--sps-text);
+            border-color: var(--sps-border);
+        }
+
+        [data-theme="dark"] .modal-header,
+        [data-theme="dark"] .modal-footer {
+            border-color: var(--sps-border);
+        }
+
+        [data-theme="dark"] .btn-close {
+            filter: invert(0.8);
+        }
+
+        [data-theme="dark"] .nav-tabs .nav-link {
+            color: var(--sps-text-soft);
+            border-color: transparent;
+        }
+
+        [data-theme="dark"] .nav-tabs .nav-link.active {
+            background: transparent;
+            color: var(--sps-text);
+            border-bottom-color: var(--sps-accent);
+        }
+
+        [data-theme="dark"] .text-white.etapa-status-force {
+            color: var(--sps-text) !important;
+        }
+
+        /* ===== Dark mode: forms (Nova Implantação, etc) ===== */
+        [data-theme="dark"] .form-label,
+        [data-theme="dark"] .form-check-label,
+        [data-theme="dark"] label.form-label {
+            color: #cbd5e1;
+        }
+
+        [data-theme="dark"] .form-control,
+        [data-theme="dark"] .form-select,
+        [data-theme="dark"] .form-control:focus,
+        [data-theme="dark"] .form-select:focus,
+        [data-theme="dark"] textarea,
+        [data-theme="dark"] textarea.form-control {
+            background: var(--sps-surface);
+            border-color: rgba(148, 163, 184, 0.25);
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] .form-control::placeholder,
+        [data-theme="dark"] textarea.form-control::placeholder {
+            color: #94a3b8;
+            opacity: 0.85;
+        }
+
+        [data-theme="dark"] .form-control:disabled,
+        [data-theme="dark"] .form-control[readonly],
+        [data-theme="dark"] .form-select:disabled,
+        [data-theme="dark"] .bg-light {
+            background: var(--sps-surface-2) !important;
+            color: #cbd5e1;
+            border-color: rgba(148, 163, 184, 0.2);
+        }
+
+        [data-theme="dark"] .input-group-text {
+            background: var(--sps-surface-2);
+            border-color: rgba(148, 163, 184, 0.25);
+            color: #cbd5e1;
+        }
+
+        [data-theme="dark"] .form-text,
+        [data-theme="dark"] small.form-text {
+            color: #94a3b8 !important;
+        }
+
+        [data-theme="dark"] .breadcrumb {
+            --bs-breadcrumb-divider-color: #64748b;
+        }
+
+        [data-theme="dark"] .breadcrumb-item a {
+            color: #38bdf8;
+        }
+
+        [data-theme="dark"] .breadcrumb-item.active {
+            color: #cbd5e1;
+        }
+
+        [data-theme="dark"] datalist option {
+            background: var(--sps-surface);
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] .card-body {
+            color: var(--sps-text);
+        }
+
+        [data-theme="dark"] h1,
+        [data-theme="dark"] h2,
+        [data-theme="dark"] h3,
+        [data-theme="dark"] h4,
+        [data-theme="dark"] h5,
+        [data-theme="dark"] h6 {
+            color: #f1f5f9;
+        }
+
+        [data-theme="dark"] .nav-tabs {
+            border-color: rgba(148, 163, 184, 0.25);
+        }
+
+        [data-theme="dark"] .nav-tabs .nav-link:hover:not(.active) {
+            border-color: rgba(148, 163, 184, 0.3);
+            color: #cbd5e1;
+        }
+
+        [data-theme="dark"] .text-muted {
+            color: #94a3b8 !important;
+        }
+
+        [data-theme="dark"] hr {
+            border-color: rgba(148, 163, 184, 0.2);
+        }
+
+        .form-readonly-visual {
+            cursor: not-allowed;
+        }
+        [data-theme="light"] .form-readonly-visual {
+            background: #f8fafc !important;
+            color: #334155;
+        }
+        [data-theme="dark"] .form-readonly-visual {
+            background: var(--sps-surface-2) !important;
+            color: #cbd5e1;
+            border-color: rgba(148, 163, 184, 0.2);
+        }
+
+        /* Pipeline de etapas (dashboard) */
+        .impl-etapa-circle {
+            width: 36px;
+            height: 36px;
+        }
+
+        .impl-etapa-circle[data-status="concluida"] {
+            background: rgba(47, 214, 138, 0.18);
+            color: #2fd68a;
+            border: 1px solid rgba(47, 214, 138, 0.35);
+        }
+
+        .impl-etapa-circle[data-status="andamento"] {
+            background: rgba(255, 193, 7, 0.18);
+            color: #ffc107;
+            border: 1px solid rgba(255, 193, 7, 0.35);
+        }
+
+        .impl-etapa-circle[data-status="pendente"] {
+            background: rgba(123, 140, 168, 0.14);
+            color: #7b8ca8;
+            border: 1px solid rgba(123, 140, 168, 0.22);
+        }
+
+        .impl-etapa-nome {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--sps-text);
+        }
+
+        .impl-etapa-texto {
+            color: var(--sps-text-soft);
+        }
+
+        .impl-etapa-chevron {
+            color: var(--sps-text-soft);
+            opacity: 0.7;
+        }
+
+        [data-theme="dark"] .impl-etapa-circle[data-status="pendente"] {
+            background: rgba(148, 163, 184, 0.12);
+            color: #cbd5e1;
+            border-color: rgba(148, 163, 184, 0.26);
+        }
+
+        [data-theme="dark"] .impl-etapa-texto {
+            color: #94a3b8;
+        }
+
+        [data-theme="dark"] .impl-etapa-nome {
+            color: #e2e8f0;
         }
 
         /* ===== RESET / BASE ===== */
@@ -843,6 +1135,24 @@
             <a class="sps-nav-link {% block active_home %}{% endblock %}" href="{% url 'home' %}">
                 <i class="bi bi-speedometer2"></i>
                 Dashboard
+            </a>
+
+            <div class="sps-sidebar__label">Implantação</div>
+
+            <a class="sps-nav-link {% block active_implantacao %}{% endblock %}"
+                href="{% url 'implantacao:dashboard' %}">
+                <i class="bi bi-diagram-3"></i>
+                Painel Implantações
+            </a>
+
+            <a class="sps-nav-link" href="{% url 'implantacao:implantacao_list' %}">
+                <i class="bi bi-list-ul"></i>
+                Todas Implantações
+            </a>
+
+            <a class="sps-nav-link" href="{% url 'implantacao:implantacao_nova' %}">
+                <i class="bi bi-plus-circle"></i>
+                Nova Implantação
             </a>
 
             {% if modulos %}

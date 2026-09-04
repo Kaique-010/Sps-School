@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+{% block title %}Nova Implantação{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item"><a href="{% url 'implantacao:dashboard' %}">Implantações</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Nova</li>
+                </ol>
+            </nav>
+            <h2 class="mb-1"><i class="bi bi-plus-circle me-2"></i>Nova Implantação</h2>
+            <p class="text-muted mb-0">Escolha como você quer iniciar o processo.</p>
+        </div>
+    </div>
+
+    {% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" role="alert">
+        {{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header p-0">
+            <ul class="nav nav-tabs nav-fill" id="tabsNova" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-semibold py-3" id="tab-movidesk" data-bs-toggle="tab"
+                        data-bs-target="#pane-movidesk" type="button" role="tab" aria-controls="pane-movidesk"
+                        aria-selected="true">
+                        <i class="bi bi-ticket-detailed-fill me-2 text-primary"></i>
+                        A partir do Ticket (Movidesk)
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold py-3" id="tab-manual" data-bs-toggle="tab"
+                        data-bs-target="#pane-manual" type="button" role="tab" aria-controls="pane-manual"
+                        aria-selected="false">
+                        <i class="bi bi-pencil-square me-2 text-secondary"></i>
+                        Cadastro Manual
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="tab-content p-4" id="tabsNovaContent">
+
+            <!-- ===== ABA 1: MOVIDESK ===== -->
+            <div class="tab-pane fade show active" id="pane-movidesk" role="tabpanel" aria-labelledby="tab-movidesk">
+
+                <div class="row mb-4 g-3">
+                    <div class="col-lg-9">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-search me-1"></i> Número do Ticket / KT
+                        </label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text"><i class="bi bi-ticket-detailed text-primary"></i></span>
+                            <input id="movidesk_ticket" type="number" min="1" class="form-control form-control-lg"
+                                placeholder="Ex.: 18392">
+                            <button id="btnBuscarTicket" class="btn btn-primary btn-lg" type="button">
+                                <i class="bi bi-cloud-arrow-down me-1"></i>
+                                Buscar Dados
+                            </button>
+                            <a href="{% url 'implantacao:movidesk_import' %}" class="btn btn-outline-info btn-lg"
+                                type="button" title="Importar e criar automaticamente (modo completo)">
+                                <i class="bi bi-lightning-charge me-1"></i>
+                                Importação Completa
+                            </a>
+                        </div>
+                        <div class="form-text mt-2">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Os dados do ticket são pré-preenchidos no formulário abaixo. Você pode revisar/editar antes
+                            de confirmar.
+                        </div>
+                    </div>
+                    <div class="col-lg-3 d-flex flex-column justify-content-between">
+                        <div id="ticketStatus" class="small text-muted"></div>
+                    </div>
+                </div>
+
+                <hr>
+                <h5 class="mb-3 mt-2"><i class="bi bi-file-earmark-person me-2"></i>Dados da Implantação</h5>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="_origem" value="movidesk">
+                    <input type="hidden" name="movidesk_ticket_id" id="movidesk_ticket_id_salvo">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Código Cliente *</label>
+                            <input type="text" name="codigo_cliente" id="f_codigo_cliente" class="form-control" required
+                                value="{{ form_data.codigo_cliente|default:'' }}">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Nome do Cliente *</label>
+                            <input type="text" name="cliente" id="f_cliente" class="form-control" required
+                                value="{{ form_data.cliente|default:'' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Documento (CNPJ/CPF) *</label>
+                            <input type="text" name="documento_cliente" id="f_documento_cliente" class="form-control"
+                                required value="{{ form_data.documento_cliente|default:'' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Código Empresa</label>
+                            <input type="number" name="empresa" id="f_empresa" class="form-control" min="0"
+                                value="{{ form_data.empresa|default:1 }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Código Filial</label>
+                            <input type="number" name="filial" id="f_filial" class="form-control" min="0"
+                                value="{{ form_data.filial|default:1 }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Implantador</label>
+                            <input type="text" name="implantador" id="f_implantador" class="form-control"
+                                list="implantadores_list" value="{{ form_data.implantador|default:'' }}">
+                            <datalist id="implantadores_list">
+                                <option value="Analista Implantação 1">
+                                <option value="Analista Implantação 2">
+                                <option value="Consultor Sênior">
+                                <option value="Tech Lead Implantação">
+                                <option value="Gerente de Operações">
+                            </datalist>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Data de Início</label>
+                            <input type="date" name="data_implantacao" id="f_data_implantacao" class="form-control"
+                                value="{{ form_data.data_implantacao|default:'' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Prazo de Implementação</label>
+                            <input type="date" name="prazo_implementacao" id="f_prazo_implementacao"
+                                class="form-control" value="{{ form_data.prazo_implementacao|default:'' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Template de Implantação</label>
+                            <select name="template" id="f_template" class="form-select">
+                                {% for key, tpl in templates.items %}
+                                <option value="{{ key }}" data-modulos="{{ tpl.modulos|default:''|join:',' }}"
+                                    data-etapas="{{ tpl.etapas|default:''|join:',' }}"
+                                    data-treinamentos="{{ tpl.treinamentos|default:''|join:',' }}" {% if form_data.template == key %}selected{% endif %}>
+                                    {{ tpl.nome }} — {{ tpl.descricao }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Define etapas, módulos e treinamentos iniciais.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Módulos Finais <small class="fw-normal">(Template + Sugeridos do
+                                    Ticket)</small></label>
+                            <input type="text" id="f_modulos_sugeridos" readonly
+                                class="form-control form-readonly-visual"
+                                placeholder="Primeiro selecione um template ou busque um ticket">
+                            <input type="hidden" name="modulos_codigos" id="f_modulos_codigos" value="">
+                            <div class="form-text">Módulos que serão efetivamente criados. Template base + extras do
+                                ticket.</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Observações</label>
+                            <textarea name="observacoes" id="f_observacoes" rows="3" class="form-control"
+                                placeholder="Informações adicionais...">{{ form_data.observacoes|default:'' }}</textarea>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{% url 'implantacao:dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x me-1"></i>Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check2 me-1"></i>Criar Implantação
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ===== ABA 2: MANUAL ===== -->
+            <div class="tab-pane fade" id="pane-manual" role="tabpanel" aria-labelledby="tab-manual">
+                <form method="post" class="card-body p-0">
+                    {% csrf_token %}
+                    <input type="hidden" name="_origem" value="manual">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Código Cliente *</label>
+                            <input type="text" name="codigo_cliente" class="form-control" required
+                                value="{{ form_data.codigo_cliente|default:'' }}" placeholder="Ex: CLI-001">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Nome do Cliente *</label>
+                            <input type="text" name="cliente" class="form-control" required
+                                value="{{ form_data.cliente|default:'' }}" placeholder="Nome completo da empresa">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Documento (CNPJ/CPF) *</label>
+                            <input type="text" name="documento_cliente" class="form-control" required
+                                value="{{ form_data.documento_cliente|default:'' }}" placeholder="00.000.000/0000-00">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Código Empresa</label>
+                            <input type="number" name="empresa" class="form-control" min="0"
+                                value="{{ form_data.empresa|default:0 }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Código Filial</label>
+                            <input type="number" name="filial" class="form-control" min="0"
+                                value="{{ form_data.filial|default:0 }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Template de Implantação</label>
+                            <select name="template" class="form-select">
+                                {% for key, tpl in templates.items %}
+                                <option value="{{ key }}" {% if form_data.template == key %}selected{% endif %}>
+                                    {{ tpl.nome }} — {{ tpl.descricao }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Define as etapas, módulos e treinamentos iniciais.</div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{% url 'implantacao:dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x me-1"></i>Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check2 me-1"></i>Criar Implantação
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const $ = (id) => document.getElementById(id);
+        const PREVIEW_URL = "{% url 'implantacao:movidesk_preview' %}";
+
+        let sugeridosPorTicket = [];
+
+        function modulosTemplateSelecionado() {
+            const sel = $('f_template');
+            if (!sel || !sel.options || !sel.selectedIndex) return [];
+            const attr = sel.options[sel.selectedIndex].getAttribute('data-modulos') || '';
+            return attr.split(',').map(s => s.trim()).filter(Boolean);
+        }
+
+        function unirUnicos(a, b) {
+            const out = [];
+            const seen = new Set();
+            for (const item of (a || []).concat(b || [])) {
+                if (!item) continue;
+                const k = String(item).toLowerCase();
+                if (seen.has(k)) continue;
+                seen.add(k);
+                out.push(item);
+            }
+            return out;
+        }
+
+        function atualizarModulosFinais() {
+            const tplMods = modulosTemplateSelecionado();
+            const uniao = unirUnicos(tplMods, sugeridosPorTicket);
+            const campoMostrar = $('f_modulos_sugeridos');
+            const campoCodigos = $('f_modulos_codigos');
+            if (campoMostrar) {
+                campoMostrar.value = uniao.length ? uniao.join(', ') : '';
+                if (!uniao.length) campoMostrar.placeholder = 'Primeiro selecione um template ou busque um ticket';
+            }
+            if (campoCodigos) {
+                campoCodigos.value = uniao.join(',');
+            }
+        }
+
+        function setStatus(msg, tipo) {
+            const el = $('ticketStatus');
+            if (!el) return;
+            const cor = tipo === 'erro' ? '#dc3545' : tipo === 'ok' ? '#198754' : 'var(--sps-text-soft)';
+            el.style.color = cor;
+            el.innerHTML = msg;
+        }
+
+        function preencher(d) {
+            $('f_codigo_cliente').value = d.codigo_cliente || '';
+            $('f_cliente').value = d.cliente || '';
+            $('f_documento_cliente').value = d.documento_cliente || '';
+            $('f_empresa').value = d.empresa != null ? d.empresa : 1;
+            $('f_filial').value = d.filial != null ? d.filial : 1;
+            $('f_implantador').value = d.implantador || '';
+            $('f_data_implantacao').value = d.data_implantacao || '';
+            $('f_prazo_implementacao').value = d.prazo_implementacao || '';
+            if (d.modulos_sugeridos && d.modulos_sugeridos.length) {
+                sugeridosPorTicket = d.modulos_sugeridos.slice();
+            } else {
+                sugeridosPorTicket = [];
+            }
+            if (d.template_sugerido) {
+                const sel = $('f_template');
+                if (sel) {
+                    const opts = sel.options;
+                    for (let i = 0; i < opts.length; i++) {
+                        if (String(opts[i].value) === String(d.template_sugerido)) {
+                            sel.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
+            atualizarModulosFinais();
+            if (d.observacoes) {
+                const atual = $('f_observacoes').value.trim();
+                $('f_observacoes').value = atual ? atual + '\n' + d.observacoes : d.observacoes;
+            }
+        }
+
+        async function buscarTicket() {
+            const ticketId = $('movidesk_ticket').value.trim();
+            if (!ticketId) {
+                setStatus('<i class="bi bi-exclamation-circle me-1"></i>Informe o número do ticket.', 'erro');
+                return;
+            }
+            setStatus('<i class="bi bi-hourglass-split me-1"></i>Buscando dados no Movidesk... Aguarde.', 'info');
+            const btn = $('btnBuscarTicket');
+            btn.disabled = true;
+            try {
+                const res = await fetch(PREVIEW_URL + '?ticket_id=' + encodeURIComponent(ticketId), {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin'
+                });
+                const json = await res.json();
+                if (!res.ok || !json.ok) {
+                    setStatus('<i class="bi bi-x-circle me-1"></i>Erro: ' + (json.erro || 'Falha na consulta.'), 'erro');
+                    return;
+                }
+                $('movidesk_ticket_id_salvo').value = ticketId;
+                preencher(json.dados || {});
+                const c = (json.dados || {}).cliente || '';
+                const tpl = (json.dados || {}).template_sugerido || '';
+                setStatus(
+                    '<i class="bi bi-check-circle me-1"></i>Sucesso — ' +
+                    (c ? '<b>' + c + '</b>' : 'Dados carregados') +
+                    (tpl ? ' · Template sugerido: <b>' + tpl + '</b>' : '') +
+                    '. Revise e ajuste os campos antes de confirmar.',
+                    'ok'
+                );
+            } catch (err) {
+                setStatus('<i class="bi bi-x-circle me-1"></i>Erro de rede: ' + err.message, 'erro');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            atualizarModulosFinais();
+            $('f_template')?.addEventListener('change', atualizarModulosFinais);
+            $('btnBuscarTicket')?.addEventListener('click', buscarTicket);
+            $('movidesk_ticket')?.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    buscarTicket();
+                }
+            });
+        });
+    })();
+</script>
+{% endblock %}

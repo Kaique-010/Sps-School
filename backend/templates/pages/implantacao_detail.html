@@ -1,0 +1,369 @@
+{% extends 'base.html' %}
+{% block title %}Implantação #{{ object.id }} - {{ object.cliente }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item"><a href="{% url 'implantacao:dashboard' %}">Implantações</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Detalhe #{{ object.id }}</li>
+                </ol>
+            </nav>
+            <h2 class="mb-1">
+                <i class="bi bi-building me-2"></i>{{ object.cliente }}
+                <span class="badge rounded-pill bg-secondary ms-2">#{{ object.id }}</span>
+            </h2>
+            <p class="text-muted mb-0">
+                Cód. {{ object.codigo_cliente }} · {{ object.documento_cliente }}
+                {% if object.empresa or object.filial %} · Emp. {{ object.empresa }} / Fil. {{ object.filial }}{% endif %}
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            {% with s=object.status %}
+            <span class="badge rounded-pill fs-6 p-2
+                {% if s == 'nao_iniciado' %}bg-secondary{% elif s == 'em_andamento' %}bg-info text-dark{% elif s == 'finalizado' %}bg-success{% else %}bg-danger{% endif %}">
+                {{ object.get_status_display }}
+            </span>
+            {% endwith %}
+        </div>
+    </div>
+
+    {% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" role="alert">
+        {{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="small text-muted mb-1">Progresso Geral</div>
+                    <div class="display-5 mb-2">{{ progresso.percentual }}%</div>
+                    <div class="progress mb-2" style="height: 10px;">
+                        <div class="progress-bar bg-info" role="progressbar"
+                             style="width: {{ progresso.percentual }}%;"></div>
+                    </div>
+                    <div class="small text-muted">
+                        Etapa atual: <strong style="color: var(--sps-text);">{{ progresso.etapa_atual }}</strong>
+                    </div>
+                    <div class="row mt-3 g-2 small">
+                        <div class="col-6">
+                            <div class="p-2 rounded text-center" style="background: rgba(0,191,255,0.08); border: 1px solid rgba(0,191,255,0.18);">
+                                <div class="fw-semibold">{{ progresso.etapas.concluidas }}/{{ progresso.etapas.total }}</div>
+                                <div class="text-muted">Etapas</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-2 rounded text-center" style="background: rgba(47,214,138,0.08); border: 1px solid rgba(47,214,138,0.18);">
+                                <div class="fw-semibold">{{ progresso.tarefas.concluidas }}/{{ progresso.tarefas.total }}</div>
+                                <div class="text-muted">Tarefas</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="small text-muted mb-2">Informações Gerais</div>
+                    <ul class="list-unstyled mb-0 small">
+                        <li class="mb-2"><strong>Implantador:</strong> {{ object.implantador|default:"—" }}</li>
+                        <li class="mb-2"><strong>Data Implantação:</strong> {{ object.data_implantacao|date:"d/m/Y"|default:"—" }}</li>
+                        <li class="mb-2"><strong>Prazo:</strong> {{ object.prazo_implementacao|date:"d/m/Y"|default:"—" }}</li>
+                        <li class="mb-2"><strong>Criado em:</strong> {{ object.criado_em|date:"d/m/Y H:i" }}</li>
+                        <li><strong>Origem Movidesk:</strong>
+                            {% if movidesk %}Ticket #{{ movidesk.ticket_id }}{% else %}—{% endif %}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="small text-muted mb-2">Ações Rápidas</div>
+                    <div class="d-flex flex-column gap-2">
+                        {% if object.status == 'nao_iniciado' %}
+                        <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#modalIniciar">
+                            <i class="bi bi-play-fill me-1"></i>Iniciar Implantação
+                        </button>
+                        {% endif %}
+                        {% if object.status != 'cancelado' and object.status != 'finalizado' %}
+                        <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal" data-bs-target="#modalCancelar">
+                            <i class="bi bi-x-circle me-1"></i>Cancelar Implantação
+                        </button>
+                        {% endif %}
+                        <a href="{% url 'implantacao:implantacao_list' %}" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-arrow-left me-1"></i>Voltar para Lista
+                        </a>
+                        <a href="{% url 'implantacao:movidesk_import' %}" class="btn btn-outline-info w-100">
+                            <i class="bi bi-download me-1"></i>Importar do Movidesk
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-signpost-2 me-2"></i>Etapas da Implantação</h5>
+                </div>
+                <div class="card-body">
+                    {% if etapas %}
+                    <div class="accordion" id="accordionEtapas">
+                        {% for etapa in etapas %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#etapa-{{ etapa.id }}"
+                                        aria-expanded="false"
+                                        aria-controls="etapa-{{ etapa.id }}">
+                                    <div class="d-flex align-items-center w-100 me-3">
+                                        <span class="me-2">
+                                            {% if etapa.status == 'concluida' %}
+                                            <i class="bi bi-check-circle-fill text-success"></i>
+                                            {% elif etapa.status == 'em_andamento' %}
+                                            <i class="bi bi-play-circle-fill text-warning"></i>
+                                            {% elif etapa.status == 'bloqueada' %}
+                                            <i class="bi bi-lock-fill text-danger"></i>
+                                            {% else %}
+                                            <i class="bi bi-circle text-secondary"></i>
+                                            {% endif %}
+                                        </span>
+                                        <strong class="me-3">{{ etapa.nome }}</strong>
+                                        <span class="badge rounded-pill ms-auto
+                                            {% if etapa.status == 'concluida' %}bg-success{% elif etapa.status == 'em_andamento' %}bg-warning text-dark{% elif etapa.status == 'bloqueada' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                            {{ etapa.get_status_display }}
+                                        </span>
+                                    </div>
+                                </button>
+                            </h2>
+                            <div id="etapa-{{ etapa.id }}" class="accordion-collapse collapse" data-bs-parent="#accordionEtapas">
+                                <div class="accordion-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div class="small text-muted">
+                                            Ordem: {{ etapa.ordem }} ·
+                                            Iniciada: {{ etapa.iniciada_em|date:"d/m/Y H:i"|default:"—" }} ·
+                                            Concluída: {{ etapa.concluida_em|date:"d/m/Y H:i"|default:"—" }}
+                                        </div>
+                                        {% if etapa.status == 'em_andamento' %}
+                                        <form method="post" action="{% url 'implantacao:implantacao_etapa_concluir' object.pk etapa.pk %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-success">
+                                                <i class="bi bi-check-lg me-1"></i>Concluir Etapa
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                    <h6 class="small text-uppercase text-muted mb-2">Tarefas</h6>
+                                    {% with tarefas=etapa.tarefas.all %}
+                                    {% if tarefas %}
+                                    <div class="list-group list-group-flush">
+                                        {% for tarefa in tarefas %}
+                                        <div class="list-group-item d-flex align-items-center px-0">
+                                            <div class="form-check me-3 flex-shrink-0">
+                                                <input class="form-check-input" type="checkbox"
+                                                       id="tarefa-{{ tarefa.id }}"
+                                                       {% if tarefa.concluida %}checked disabled{% endif %}>
+                                                <label class="form-check-label" for="tarefa-{{ tarefa.id }}"></label>
+                                            </div>
+                                            <div class="flex-grow-1 {% if tarefa.concluida %}text-decoration-line-through text-muted{% endif %}">
+                                                <div>{{ tarefa.titulo }}</div>
+                                                {% if tarefa.descricao %}
+                                                <div class="small text-muted">{{ tarefa.descricao }}</div>
+                                                {% endif %}
+                                            </div>
+                                            {% if tarefa.obrigatoria %}
+                                            <span class="badge bg-secondary ms-2" style="font-size: 10px;">Obrigatória</span>
+                                            {% endif %}
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <div class="text-muted small">Nenhuma tarefa cadastrada para esta etapa.</div>
+                                    {% endif %}
+                                    {% endwith %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted">Nenhuma etapa cadastrada. Inicie a implantação para gerar o fluxo.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-7 mb-3">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-collection me-2"></i>Módulos</h5>
+                </div>
+                <div class="card-body">
+                    {% if modulos %}
+                    {% for im in modulos %}
+                    <div class="mb-3 border rounded p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>{{ im.modulo.nome }}</strong>
+                            <span class="badge rounded-pill
+                                {% if im.status == 'concluido' %}bg-success{% elif im.status == 'em_andamento' %}bg-info text-dark{% else %}bg-secondary{% endif %}">
+                                {{ im.get_status_display }}
+                            </span>
+                        </div>
+                        {% with telas=im.telas.all %}
+                        {% if telas %}
+                        <div class="small">
+                            <div class="text-muted mb-1">Telas:</div>
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for tela_rel in telas %}
+                                <span class="badge rounded-pill
+                                    {% if tela_rel.status == 'concluida' %}bg-success-subtle text-success{% elif tela_rel.status == 'em_andamento' %}bg-warning-subtle text-warning{% else %}bg-secondary-subtle text-secondary{% endif %}"
+                                      style="border: 1px solid currentColor; opacity: 0.85;">
+                                    {{ tela_rel.tela.nome }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="text-muted small">Nenhum módulo associado.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5 mb-3">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-play-circle me-2"></i>Treinamentos Agendados</h5>
+                </div>
+                <div class="card-body">
+                    {% if treinamentos %}
+                    <div class="d-flex flex-column gap-2">
+                        {% for t in treinamentos %}
+                        <div class="border rounded p-2">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-semibold">{{ t.titulo }}</div>
+                                    <div class="small text-muted">
+                                        <i class="bi bi-calendar me-1"></i>
+                                        {{ t.data_agendada|date:"d/m/Y H:i" }}
+                                        {% if t.modulo %} · Módulo: {{ t.modulo.nome }}{% endif %}
+                                    </div>
+                                    {% if t.responsavel %}
+                                    <div class="small"><i class="bi bi-person me-1"></i>{{ t.responsavel }}</div>
+                                    {% endif %}
+                                    {% if t.descricao %}
+                                    <div class="small text-muted mt-1">{{ t.descricao }}</div>
+                                    {% endif %}
+                                </div>
+                                <span class="badge rounded-pill
+                                    {% if t.realizado %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {% if t.realizado %}Realizado{% else %}Agendado{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-muted small">Nenhum treinamento agendado.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if object.observacoes %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-journal-text me-2"></i>Observações</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0 whitespace-pre-line">{{ object.observacoes }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% if object.status == 'nao_iniciado' %}
+<div class="modal fade" id="modalIniciar" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post" action="{% url 'implantacao:implantacao_iniciar' object.pk %}" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title">Iniciar Implantação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Selecione ou informe o implantador responsável *</label>
+                    <input class="form-control" list="implantadoresList" name="implantador" required
+                           placeholder="Digite ou selecione um nome..."
+                           value="{{ object.implantador|default:'' }}">
+                    <datalist id="implantadoresList">
+                        {% for nome in implantadores_sugestao %}
+                        <option value="{{ nome }}"></option>
+                        {% endfor %}
+                    </datalist>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-play-fill me-1"></i>Iniciar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+{% if object.status != 'cancelado' and object.status != 'finalizado' %}
+<div class="modal fade" id="modalCancelar" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post" action="{% url 'implantacao:implantacao_cancelar' object.pk %}" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title">Cancelar Implantação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Motivo do cancelamento</label>
+                    <textarea class="form-control" name="motivo" rows="3"
+                              placeholder="Informe o motivo para cancelamento..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Voltar</button>
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-x-circle me-1"></i>Confirmar Cancelamento
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

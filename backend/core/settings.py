@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'tkts',
     'Assistente_Khronos',
     'central_web',
+    'implantacao',
 ]
 
 MIDDLEWARE = [
@@ -222,4 +223,9 @@ ALLOWED_HOSTS = ["sps-training.site", "www.sps-training.site", "localhost", "127
 CORS_ALLOW_CREDENTIALS = True
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
+
+# ============ Integração Movidesk ============
+MOVIDESK_BASE_URL = os.getenv('MOVIDESK_BASE_URL', 'https://api.movidesk.com/public/v1')
+MOVIDESK_TOKEN = os.getenv('MOVIDESK_TOKEN', '')
+MOVIDESK_TIMEOUT = int(os.getenv('MOVIDESK_TIMEOUT', '30'))
 
