@@ -1,15 +1,13 @@
-name: Deploy Production
+name: Deploy em produção
 
 on:
   push:
     branches:
       - main
-    paths:
-      - 'backend/**'
-      - '.github/workflows/deploy.yml'
 
 jobs:
   deploy:
+    name: Deploy no servidor
     runs-on: ubuntu-latest
     environment: SPS-SCHOOL
 
@@ -30,14 +28,40 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << 'EOF'
             set -e
+
             cd /home/ubuntu/Sps-School/backend
+
             source ../venv/bin/activate
+
             git fetch origin main
             git reset --hard origin/main
             git clean -fd
+
             pip install -r requirements.txt
+
             python manage.py migrate
+
             python manage.py collectstatic --noinput
+
             sudo systemctl restart gunicorn
             sudo systemctl reload nginx
           EOF
+
+  mirror:
+    name: Espelho no repositório da empresa
+    runs-on: ubuntu-latest
+    environment: SPS-SCHOOL
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sincronizar repositório da empresa
+        env:
+          MIRROR_TOKEN: ${{ secrets.MIRROR_TOKEN }}
+        shell: bash
+        run: |
+          git remote add empresa \
+            "https://x-access-token:${MIRROR_TOKEN}@github.com/spartacusWeb25/Sps-School.git"
+
+          git push empresa HEAD:main
