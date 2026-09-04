@@ -47,7 +47,7 @@ jobs:
             sudo systemctl reload nginx
           EOF
 
-  mirror:
+    mirror:
     name: Espelho no repositório da empresa
     runs-on: ubuntu-latest
     environment: SPS-SCHOOL
@@ -56,19 +56,48 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Testar acesso ao repositório da empresa
+      - name: Validar acesso ao repositório destino
         env:
           MIRROR_TOKEN: ${{ secrets.MIRROR_TOKEN }}
         shell: bash
         run: |
-          git ls-remote \
-            "https://x-access-token:${MIRROR_TOKEN}@github.com/spartacusWeb25/Sps-School.git"
+          set -e
 
-      - name: Sincronizar repositório da empresa
+          echo "Validando acesso ao repositório destino..."
+
+          curl -fsSL \
+            -H "Authorization: Bearer ${MIRROR_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/spartacusWeb25/Sps-School \
+            > /tmp/repo.json
+
+          echo "Repositório acessível."
+          cat /tmp/repo.json | grep -E '"full_name"|"private"'
+
+      - name: Testar permissão de escrita
         env:
           MIRROR_TOKEN: ${{ secrets.MIRROR_TOKEN }}
         shell: bash
         run: |
+          set -e
+
+          echo "Consultando permissões..."
+
+          curl -fsSL \
+            -H "Authorization: Bearer ${MIRROR_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/spartacusWeb25/Sps-School \
+            > /tmp/repo.json
+
+          grep -E '"push"| "admin"| "maintain"' /tmp/repo.json || true
+
+      - name: Sincronizar main
+        env:
+          MIRROR_TOKEN: ${{ secrets.MIRROR_TOKEN }}
+        shell: bash
+        run: |
+          set -e
+
           git remote add empresa \
             "https://x-access-token:${MIRROR_TOKEN}@github.com/spartacusWeb25/Sps-School.git"
 
