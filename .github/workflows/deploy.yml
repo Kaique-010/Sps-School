@@ -6,6 +6,7 @@ on:
       - main
 
 jobs:
+
   deploy:
     name: Deploy no servidor
     runs-on: ubuntu-latest
@@ -47,7 +48,7 @@ jobs:
             sudo systemctl reload nginx
           EOF
 
-    mirror:
+  mirror:
     name: Espelho no repositório da empresa
     runs-on: ubuntu-latest
     environment: SPS-SCHOOL
@@ -89,7 +90,7 @@ jobs:
             https://api.github.com/repos/spartacusWeb25/Sps-School \
             > /tmp/repo.json
 
-          grep -E '"push"| "admin"| "maintain"' /tmp/repo.json || true
+          grep -E '"push"|"admin"|"maintain"' /tmp/repo.json || true
 
       - name: Sincronizar main
         env:
