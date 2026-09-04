@@ -56,6 +56,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Testar acesso ao repositório da empresa
+        env:
+          MIRROR_TOKEN: ${{ secrets.MIRROR_TOKEN }}
+        shell: bash
+        run: |
+          git ls-remote \
+            "https://x-access-token:${MIRROR_TOKEN}@github.com/spartacusWeb25/Sps-School.git"
+
       - name: Sincronizar repositório da empresa
         env:
           MIRROR_TOKEN: ${{ secrets.MIRROR_TOKEN }}
