@@ -27,6 +27,44 @@ class MovideskClient:
             params.update(extra)
         return params
 
+    def _request(self, method, endpoint, *, params=None, json=None):
+        if not self.base_url or not self.token:
+            raise MovideskError(
+                'MOVIDESK_BASE_URL e MOVIDESK_TOKEN devem estar configurados.'
+            )
+
+        url = f'{self.base_url}/{endpoint.lstrip("/")}'
+
+        try:
+            response = self.session.request(
+                method,
+                url,
+                params=self._build_params(params),
+                json=json,
+                timeout=self.timeout,
+            )
+        except requests.RequestException as exc:
+            raise MovideskError(
+                f'Erro de comunicação com o Movidesk: {exc}'
+            ) from exc
+
+        if not 200 <= response.status_code < 300:
+            detail = self._extract_error(response)
+
+            raise MovideskError(
+                f'Erro na API do Movidesk: '
+                f'HTTP {response.status_code}. {detail}'
+            )
+
+        if not response.content:
+            return None
+
+        try:
+            return response.json()
+        except ValueError:
+            return response.text
+        
+    
     def obter_ticket(self, ticket_id: int):
         if not self.base_url or not self.token:
             raise MovideskError('MOVIDESK_BASE_URL e MOVIDESK_TOKEN devem estar configurados.')
@@ -100,3 +138,11 @@ class MovideskClient:
         if not text:
             return 'Sem detalhes adicionais na resposta.'
         return f'Detalhes: {text[:300]}'
+
+    def atualizar_ticket(self, ticket_id: int, payload: dict):
+        return self._request(
+            "PATCH",
+            "/tickets",
+            params={"id": ticket_id},
+            json=payload,
+        )

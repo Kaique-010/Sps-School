@@ -1,0 +1,77 @@
+{% load static %}
+<div class="modal-header">
+    <h5 class="modal-title fw-semibold">
+        <i class="bi bi-send-check me-2"></i>Enviar Ação — Movidesk
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+</div>
+<div class="modal-body">
+    <div class="d-flex align-items-start gap-3 mb-3 p-3 rounded-3"
+        style="background: rgba(56,189,248,.08); border: 1px solid rgba(56,189,248,.2);">
+        <i class="bi bi-info-circle text-info fs-4 mt-1"></i>
+        <div class="small">
+            <div class="fw-semibold mb-1">{{ implantacao.cliente }}</div>
+            <div class="text-muted">
+                Cód. <b>{{ implantacao.codigo_cliente }}</b>
+                {% if implantacao.implantador %} · Implantador: <b>{{ implantacao.implantador }}</b>{% endif %}
+            </div>
+            {% if origem %}
+            <div class="mt-1 text-muted">
+                Ticket Movidesk: <b>#{{ origem.ticket_id }}</b>
+            </div>
+            {% else %}
+            <div class="mt-1 text-danger fw-semibold">
+                Esta implantação NÃO possui ticket vinculado ao Movidesk.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <form method="POST" id="formAcaoMovideskModal"
+        action="{% url 'implantacao:implantacao_enviar_acao' implantacao.pk %}">
+        {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+        <div class="mb-3">
+            <label class="form-label fw-semibold mb-2">Tipo da Ação</label>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <input type="radio" class="btn-check" name="tipo_acao" id="t_interna_modal" value="interna" checked>
+                    <label class="btn btn-outline-secondary w-100 text-start" for="t_interna_modal">
+                        <i class="bi bi-lock-fill me-2"></i>Ação Interna
+                        <div class="small fw-normal text-muted mt-1">
+                            Visível apenas para a equipe interna.
+                        </div>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <input type="radio" class="btn-check" name="tipo_acao" id="t_publica_modal" value="publica">
+                    <label class="btn btn-outline-info w-100 text-start" for="t_publica_modal">
+                        <i class="bi bi-globe-americas me-2"></i>Ação Pública
+                        <div class="small fw-normal text-muted mt-1">
+                            Enviada e visível também ao cliente.
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-0">
+            <label for="descricao_acao_modal" class="form-label fw-semibold">Descrição da Ação</label>
+            <textarea class="form-control" id="descricao_acao_modal" name="descricao_acao" rows="5"
+                placeholder="Ex.: Realizada instalação do ambiente de homologação e envio dos acessos."
+                required></textarea>
+            <div class="form-text mt-2">
+                Esta mensagem será gravada no histórico do ticket Movidesk.
+            </div>
+        </div>
+    </form>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+        Cancelar
+    </button>
+    <button type="submit" form="formAcaoMovideskModal" class="btn btn-primary" {% if sem_origem %}disabled{% endif %}>
+        <i class="bi bi-send me-1"></i>Enviar Ação
+    </button>
+</div>

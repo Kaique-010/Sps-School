@@ -12,5 +12,6 @@ urlpatterns = [
     path('<int:pk>/iniciar/', views.ImplantacaoIniciarView.as_view(), name='implantacao_iniciar'),
     path('<int:pk>/cancelar/', views.ImplantacaoCancelarView.as_view(), name='implantacao_cancelar'),
     path('<int:pk>/etapa/<int:etapa_id>/concluir/', views.ImplantacaoEtapaConcluirView.as_view(), name='implantacao_etapa_concluir'),
+    path('<int:pk>/acao/movidesk/', views.ImplantacaoEnviarAcaoView.as_view(), name='implantacao_enviar_acao'),
     path('importar/movidesk/', views.MovideskImportView.as_view(), name='movidesk_import'),
 ]

@@ -322,6 +322,72 @@ class MovideskImportView(View):
             return render(request, self.template_name, {'ticket_id': ticket_id})
 
 
+@method_decorator(login_required, name='dispatch')
+class ImplantacaoEnviarAcaoView(View):
+
+    TIPO_INTERNO = 'interna'
+    TIPO_PUBLICA = 'publica'
+
+    def _voltar(self, request, imp):
+        next_url = (request.POST.get('next') or request.GET.get('next') or '').strip()
+        if next_url and next_url.startswith('/'):
+            return redirect(next_url)
+        return redirect('implantacao:implantacao_detail', pk=imp.pk)
+
+    def _tem_origem(self, imp):
+        return bool(getattr(imp, 'movidesk', None))
+
+    def get(self, request, pk):
+        imp = get_object_or_404(Implantacao, pk=pk)
+        next_url = (request.GET.get('next') or '').strip()
+        sem_origem = not self._tem_origem(imp)
+        data = {
+            'implantacao': imp,
+            'next': next_url,
+            'sem_origem': sem_origem,
+            'origem': imp.movidesk if not sem_origem else None,
+        }
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or (
+            request.GET.get('partial') == '1'
+        ):
+            return render(request, 'partials/movidesk_acao_modal.html', data)
+        return render(request, 'pages/movidesk_acao.html', data)
+
+    def post(self, request, pk):
+        imp = get_object_or_404(Implantacao, pk=pk)
+        tipo = (request.POST.get('tipo_acao') or '').strip().lower()
+        descricao = (request.POST.get('descricao_acao') or '').strip()
+        if tipo not in (self.TIPO_INTERNO, self.TIPO_PUBLICA):
+            messages.error(
+                request,
+                'Selecione o tipo da ação: Interna ou Pública.',
+            )
+            return self._voltar(request, imp)
+        if not descricao:
+            messages.error(request, 'Informe a descrição da ação antes de enviar.')
+            return self._voltar(request, imp)
+        try:
+            from implantacao.integrations.movidesk.services.movidesk_sync_service import (
+                MovideskSyncService,
+            )
+            sync = MovideskSyncService()
+            if tipo == self.TIPO_INTERNO:
+                sync.adicionar_acao_interna(imp, descricao)
+                tipo_nome = 'interna'
+            else:
+                sync.adicionar_acao_publica(imp, descricao)
+                tipo_nome = 'pública'
+            messages.success(
+                request,
+                f'Ação {tipo_nome} enviada para o ticket Movidesk com sucesso.',
+            )
+        except ValueError as ve:
+            messages.error(request, f'{ve}')
+        except Exception as exc:
+            messages.error(request, f'Erro ao enviar ação para o Movidesk: {exc}')
+        return self._voltar(request, imp)
+
+
 @login_required
 def implantacao_nova(request):
     template_name = 'pages/implantacao_nova.html'

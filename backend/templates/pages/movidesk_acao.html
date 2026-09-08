@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}Enviar Ação Movidesk{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item">
+                <a href="{% url 'implantacao:dashboard' %}">Implantações</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'implantacao:implantacao_detail' implantacao.pk %}">#{{ implantacao.pk }} — {{ implantacao.cliente }}</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Enviar Ação Movidesk</li>
+        </ol>
+    </nav>
+
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <h2 class="mb-1"><i class="bi bi-send-check me-2"></i>Enviar Ação — Movidesk</h2>
+            <p class="text-muted mb-0">
+                Registre uma ação interna ou pública no ticket Movidesk desta implantação.
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'implantacao:implantacao_detail' implantacao.pk %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex align-items-start gap-3 mb-4 p-3 rounded-3"
+                 style="background: rgba(56,189,248,.08); border: 1px solid rgba(56,189,248,.2);">
+                <i class="bi bi-info-circle text-info fs-4 mt-1"></i>
+                <div>
+                    <div class="fw-semibold">{{ implantacao.cliente }}</div>
+                    <div class="text-muted small">
+                        Cód. <b>{{ implantacao.codigo_cliente }}</b>
+                        {% if implantacao.implantador %} · Implantador: <b>{{ implantacao.implantador }}</b>{% endif %}
+                    </div>
+                    {% if origem %}
+                    <div class="small text-muted mt-1">
+                        Ticket Movidesk: <b>#{{ origem.ticket_id }}</b>
+                    </div>
+                    {% else %}
+                    <div class="small text-danger fw-semibold mt-1">
+                        Esta implantação NÃO possui ticket vinculado ao Movidesk.
+                        Importe ou vincule um ticket antes de enviar ações.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <form method="POST" action="{% url 'implantacao:implantacao_enviar_acao' implantacao.pk %}">
+                {% csrf_token %}
+                {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold mb-2">Tipo da Ação</label>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <input type="radio" class="btn-check" name="tipo_acao" id="t_interna_page" value="interna" checked>
+                            <label class="btn btn-outline-secondary w-100 text-start" for="t_interna_page">
+                                <i class="bi bi-lock-fill me-2"></i>Ação Interna
+                                <div class="small fw-normal text-muted mt-1">
+                                    Visível apenas para a equipe interna do suporte.
+                                </div>
+                            </label>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="radio" class="btn-check" name="tipo_acao" id="t_publica_page" value="publica">
+                            <label class="btn btn-outline-info w-100 text-start" for="t_publica_page">
+                                <i class="bi bi-globe-americas me-2"></i>Ação Pública
+                                <div class="small fw-normal text-muted mt-1">
+                                    Enviada para o cliente e registrada no histórico público.
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="descricao_acao_page" class="form-label fw-semibold">Descrição da Ação</label>
+                    <textarea class="form-control" id="descricao_acao_page" name="descricao_acao" rows="6"
+                        placeholder="Ex.: Realizada instalação do ambiente de homologação e envio dos acessos via e-mail para o cliente."
+                        required></textarea>
+                    <div class="form-text mt-2">
+                        Esta mensagem será gravada no histórico do ticket Movidesk e associada ao perfil padrão do implantador.
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'implantacao:implantacao_detail' implantacao.pk %}"
+                       class="btn btn-outline-secondary">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary"
+                            {% if sem_origem %}disabled{% endif %}>
+                        <i class="bi bi-send me-1"></i>Enviar Ação
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
