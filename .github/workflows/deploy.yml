@@ -6,7 +6,6 @@ on:
       - main
 
 jobs:
-
   deploy:
     name: Deploy no servidor
     runs-on: ubuntu-latest
@@ -17,6 +16,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Setup SSH
         shell: bash
@@ -56,9 +56,11 @@ jobs:
           MIRROR_TOKEN: ${{ secrets.MIRROR_TOKEN }}
         run: |
           set -e
+          git remote remove empresa 2>/dev/null || true
           git remote add empresa \
             "https://x-access-token:${MIRROR_TOKEN}@github.com/spartacusWeb25/Sps-School.git"
-          git push empresa HEAD:main
+          git fetch empresa main || true
+          git push empresa "HEAD:refs/heads/main" --force
 
   mirror:
     name: Diagnosticar acesso ao repositório empresa
