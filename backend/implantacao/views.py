@@ -251,7 +251,7 @@ class ImplantacaoIniciarView(View):
         implantador = (request.POST.get('implantador') or '').strip()
         if not implantador:
             messages.error(request, 'Selecione ou informe o implantador antes de iniciar.')
-            return redirect('implantacao_detail', pk=imp.pk)
+            return redirect('implantacao:implantacao_detail', pk=imp.pk)
         try:
             ImplantacaoService.iniciar(imp, implantador=implantador)
             messages.success(
@@ -260,7 +260,7 @@ class ImplantacaoIniciarView(View):
             )
         except Exception as exc:
             messages.error(request, f'Não foi possível iniciar a implantação: {exc}')
-        return redirect('implantacao_detail', pk=imp.pk)
+        return redirect('implantacao:implantacao_detail', pk=imp.pk)
 
 
 @method_decorator(login_required, name='dispatch')
@@ -273,7 +273,7 @@ class ImplantacaoCancelarView(View):
             messages.success(request, 'Implantação cancelada.')
         except Exception as exc:
             messages.error(request, f'Não foi possível cancelar: {exc}')
-        return redirect('implantacao_detail', pk=imp.pk)
+        return redirect('implantacao:implantacao_detail', pk=imp.pk)
 
 
 @method_decorator(login_required, name='dispatch')
@@ -286,7 +286,7 @@ class ImplantacaoEtapaConcluirView(View):
             messages.success(request, f'Etapa "{etapa.nome}" concluída.')
         except Exception as exc:
             messages.error(request, f'Não foi possível concluir a etapa: {exc}')
-        return redirect('implantacao_detail', pk=imp.pk)
+        return redirect('implantacao:implantacao_detail', pk=imp.pk)
 
 
 @method_decorator(login_required, name='dispatch')
@@ -316,7 +316,7 @@ class MovideskImportView(View):
                 request,
                 f'Ticket #{ticket_id_int} importado com sucesso — Implantação #{implantacao.pk} criada/atualizada.',
             )
-            return redirect('implantacao_detail', pk=implantacao.pk)
+            return redirect('implantacao:implantacao_detail', pk=implantacao.pk)
         except Exception as exc:
             messages.error(request, f'Falha ao importar ticket #{ticket_id_int}: {exc}')
             return render(request, self.template_name, {'ticket_id': ticket_id})
