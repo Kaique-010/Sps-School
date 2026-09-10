@@ -16,6 +16,23 @@
             </a>
         </div>
     </div>
+    {% if messages %}
+    <div class="row mb-3">
+        <div class="col-12">
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                    {% if message.tags == 'success' %}
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                    {% elif message.tags == 'error' %}
+                        <i class="bi bi-exclamation-octagon-fill me-2"></i>
+                    {% endif %}
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
 
     <div class="card">
         <div class="card-body">
@@ -158,10 +175,34 @@
             }
         }
 
+        function configurarSubmitForm() {
+            const form = document.getElementById('formAcaoMovideskModal');
+            if (!form || form.getAttribute('data-submit-bound')) return;
+
+            form.setAttribute('data-submit-bound', '1');
+            form.addEventListener('submit', function (e) {
+                const btnSubmit = form.querySelector('button[type="submit"]') || document.querySelector('button[form="formAcaoMovideskModal"]');
+                const btnCancelar = document.querySelector('#modalEnviarAcao .btn-outline-secondary');
+
+                if (btnSubmit) {
+                    btnSubmit.disabled = true;
+                    btnSubmit.innerHTML = `
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Enviando...
+                    `;
+                }
+
+                if (btnCancelar) {
+                    btnCancelar.disabled = true;
+                }
+            });
+        }
+
         function carregarModal(url, nextUrl, temOrigem, cliente) {
             iniciarModalAcao();
             const body = document.getElementById('modalAcaoBody');
             if (!body) return;
+
             if (temOrigem !== '1') {
                 body.innerHTML = [
                     '<div class="modal-header">',
@@ -181,16 +222,26 @@
                 if (modal) modal.show();
                 return;
             }
+
             const q = (url.indexOf('?') >= 0 ? '&' : '?') + 'partial=1' + (nextUrl ? '&next=' + encodeURIComponent(nextUrl) : '');
+            
+            // Exibe indicador inicial no modal enquanto carrega o HTML parcial
+            body.innerHTML = `
+                <div class="modal-body text-center py-5">
+                    <div class="spinner-border text-primary mb-3" role="status"></div>
+                    <div class="text-muted small">Carregando formulário...</div>
+                </div>
+            `;
+            if (modal) modal.show();
+
             fetch(url + q, { credentials: 'same-origin' })
                 .then(r => r.ok ? r.text() : Promise.reject('HTTP ' + r.status))
                 .then(html => {
                     body.innerHTML = html;
-                    if (modal) modal.show();
+                    configurarSubmitForm(); // Liga a trava de submit após renderizar o HTML do modal
                 })
                 .catch(err => {
                     body.innerHTML = '<div class="modal-body"><div class="alert alert-danger mb-0">Erro ao carregar formulário: ' + err + '</div></div>';
-                    if (modal) modal.show();
                 });
         }
 

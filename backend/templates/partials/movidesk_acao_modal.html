@@ -27,7 +27,8 @@
         </div>
     </div>
 
-    <form method="POST" id="formAcaoMovideskModal"
+    <!-- Adicionado enctype="multipart/form-data" -->
+    <form method="POST" id="formAcaoMovideskModal" enctype="multipart/form-data"
         action="{% url 'implantacao:implantacao_enviar_acao' implantacao.pk %}">
         {% csrf_token %}
         {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
@@ -56,13 +57,20 @@
             </div>
         </div>
 
-        <div class="mb-0">
+        <div class="mb-3">
             <label for="descricao_acao_modal" class="form-label fw-semibold">Descrição da Ação</label>
-            <textarea class="form-control" id="descricao_acao_modal" name="descricao_acao" rows="5"
+            <textarea class="form-control" id="descricao_acao_modal" name="descricao_acao" rows="4"
                 placeholder="Ex.: Realizada instalação do ambiente de homologação e envio dos acessos."
                 required></textarea>
-            <div class="form-text mt-2">
-                Esta mensagem será gravada no histórico do ticket Movidesk.
+        </div>
+
+        <!-- Campo de Anexo -->
+        <div class="mb-0">
+            <label for="anexos_modal" class="form-label fw-semibold">Anexo(s) <span
+                    class="fw-normal text-muted">(Opcional)</span></label>
+            <input class="form-control" type="file" id="anexos_modal" name="anexos" multiple>
+            <div class="form-text mt-1">
+                Selecione arquivos (PDF, imagens, logs) para enviar junto com esta ação.
             </div>
         </div>
     </form>

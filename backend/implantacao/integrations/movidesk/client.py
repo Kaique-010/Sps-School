@@ -1,3 +1,5 @@
+import os
+import mimetypes
 import requests
 from django.conf import settings
 
@@ -29,9 +31,7 @@ class MovideskClient:
 
     def _request(self, method, endpoint, *, params=None, json=None):
         if not self.base_url or not self.token:
-            raise MovideskError(
-                'MOVIDESK_BASE_URL e MOVIDESK_TOKEN devem estar configurados.'
-            )
+            raise MovideskError('MOVIDESK_BASE_URL e MOVIDESK_TOKEN devem estar configurados.')
 
         url = f'{self.base_url}/{endpoint.lstrip("/")}'
 
@@ -44,17 +44,11 @@ class MovideskClient:
                 timeout=self.timeout,
             )
         except requests.RequestException as exc:
-            raise MovideskError(
-                f'Erro de comunicação com o Movidesk: {exc}'
-            ) from exc
+            raise MovideskError(f'Erro de comunicação com o Movidesk: {exc}') from exc
 
         if not 200 <= response.status_code < 300:
             detail = self._extract_error(response)
-
-            raise MovideskError(
-                f'Erro na API do Movidesk: '
-                f'HTTP {response.status_code}. {detail}'
-            )
+            raise MovideskError(f'Erro na API do Movidesk: HTTP {response.status_code}. {detail}')
 
         if not response.content:
             return None
@@ -63,8 +57,7 @@ class MovideskClient:
             return response.json()
         except ValueError:
             return response.text
-        
-    
+
     def obter_ticket(self, ticket_id: int):
         if not self.base_url or not self.token:
             raise MovideskError('MOVIDESK_BASE_URL e MOVIDESK_TOKEN devem estar configurados.')
@@ -88,10 +81,7 @@ class MovideskClient:
                     data = response.json()
                     if isinstance(data, list):
                         if len(data) == 0:
-                            last_error = MovideskError(
-                                f'Ticket #{ticket_id} não encontrado no Movidesk. '
-                                f'Verifique se o ID existe e se o token tem permissão de leitura.'
-                            )
+                            last_error = MovideskError(f'Ticket #{ticket_id} não encontrado no Movidesk.')
                             continue
                         return data[0]
                     if isinstance(data, dict):
@@ -101,27 +91,13 @@ class MovideskClient:
                         if isinstance(items, list) and items:
                             return items[0]
                         return data
-                    last_error = MovideskError(
-                        f'Ticket #{ticket_id}: resposta inesperada do Movidesk. HTTP {response.status_code}.'
-                    )
-                elif response.status_code in (400, 401, 403, 404, 500):
-                    detail = self._extract_error(response)
-                    last_error = MovideskError(
-                        f'Erro ao consultar ticket {ticket_id}: HTTP {response.status_code}. {detail}'
-                    )
                 else:
                     detail = self._extract_error(response)
-                    last_error = MovideskError(
-                        f'Erro ao consultar ticket {ticket_id}: HTTP {response.status_code}. {detail}'
-                    )
+                    last_error = MovideskError(f'Erro ao consultar ticket {ticket_id}: HTTP {response.status_code}. {detail}')
             except requests.RequestException as exc:
-                msg = f'Erro de rede ao consultar ticket {ticket_id}: {exc}'
-                last_error = MovideskError(msg)
-                last_error.__cause__ = exc
+                last_error = MovideskError(f'Erro de rede ao consultar ticket {ticket_id}: {exc}')
 
-        raise last_error or MovideskError(
-            f'Não foi possível consultar o ticket {ticket_id} na API do Movidesk.'
-        )
+        raise last_error or MovideskError(f'Não foi possível consultar o ticket {ticket_id} na API do Movidesk.')
 
     def _extract_error(self, response):
         try:
@@ -146,3 +122,64 @@ class MovideskClient:
             params={"id": ticket_id},
             json=payload,
         )
+
+    def enviar_anexos(self, ticket_id: int, anexos, action_id: int):
+        if not self.base_url or not self.token:
+            raise MovideskError('MOVIDESK_BASE_URL e MOVIDESK_TOKEN devem estar configurados.')
+
+        endpoint = "/ticketFileUpload" if "/public/v1" in self.base_url else "/public/v1/ticketFileUpload"
+        url = f"{self.base_url.rstrip('/')}/{endpoint.lstrip('/')}"
+
+        params = {
+            "token": self.token,
+            "id": ticket_id,
+            "actionId": action_id,
+        }
+
+        # Trata nome e MIME type dinamicamente do objeto InMemoryUploadedFile (Django) ou File
+        caminho_original = getattr(anexos, "name", "arquivo.pdf")
+        nome_arquivo = os.path.basename(caminho_original)
+        
+        # Detecta tipo do arquivo ou define padrão octet-stream/pdf
+        mime_type, _ = mimetypes.guess_type(nome_arquivo)
+        mime_type = getattr(anexos, "content_type", None) or mime_type or "application/octet-stream"
+
+        # Salva o Content-Type atual da sessão
+        content_type_original = self.session.headers.pop('Content-Type', None)
+
+        try:
+            # Garante o posicionamento do ponteiro do arquivo no início
+            if hasattr(anexos, 'seek'):
+                anexos.seek(0)
+
+            # Realiza a requisição sem o 'Content-Type: application/json' na sessão
+            resposta = self.session.post(
+                url,
+                params=params,
+                files={
+                    "anexos": (
+                        nome_arquivo,
+                        anexos,
+                        mime_type,
+                    ),
+                },
+                timeout=self.timeout,
+            )
+        except requests.RequestException as exc:
+            raise MovideskError(f'Erro de rede ao enviar anexos ao ticket {ticket_id}: {exc}') from exc
+        finally:
+            # Restaura o Content-Type padrão da sessão
+            if content_type_original:
+                self.session.headers['Content-Type'] = content_type_original
+
+        if not 200 <= resposta.status_code < 300:
+            detail = self._extract_error(resposta)
+            raise MovideskError(f'Erro ao enviar anexos ao ticket {ticket_id}: HTTP {resposta.status_code}. {detail}')
+
+        if not resposta.content:
+            return None
+
+        try:
+            return resposta.json()
+        except ValueError:
+            return resposta.text

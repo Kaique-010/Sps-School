@@ -357,34 +357,57 @@ class ImplantacaoEnviarAcaoView(View):
         imp = get_object_or_404(Implantacao, pk=pk)
         tipo = (request.POST.get('tipo_acao') or '').strip().lower()
         descricao = (request.POST.get('descricao_acao') or '').strip()
+        arquivos = request.FILES.getlist('anexos')  # Captura anexos do formulário
+
         if tipo not in (self.TIPO_INTERNO, self.TIPO_PUBLICA):
-            messages.error(
-                request,
-                'Selecione o tipo da ação: Interna ou Pública.',
-            )
+            messages.error(request, 'Selecione o tipo da ação: Interna ou Pública.')
             return self._voltar(request, imp)
+
         if not descricao:
             messages.error(request, 'Informe a descrição da ação antes de enviar.')
             return self._voltar(request, imp)
+
         try:
             from implantacao.integrations.movidesk.services.movidesk_sync_service import (
                 MovideskSyncService,
             )
             sync = MovideskSyncService()
-            if tipo == self.TIPO_INTERNO:
-                sync.adicionar_acao_interna(imp, descricao)
-                tipo_nome = 'interna'
-            else:
-                sync.adicionar_acao_publica(imp, descricao)
-                tipo_nome = 'pública'
-            messages.success(
-                request,
-                f'Ação {tipo_nome} enviada para o ticket Movidesk com sucesso.',
+            tipo_enum = (
+                sync.TIPO_ACAO_INTERNA
+                if tipo == self.TIPO_INTERNO
+                else sync.TIPO_ACAO_PUBLICA
             )
+
+            # Se houver arquivos anexados
+            if arquivos:
+                sync.adicionar_acao_com_anexo(
+                    implantacao=imp,
+                    descricao=descricao,
+                    arquivos=arquivos,
+                    tipo=tipo_enum,
+                )
+            else:
+                if tipo == self.TIPO_INTERNO:
+                    sync.adicionar_acao_interna(imp, descricao)
+                else:
+                    sync.adicionar_acao_publica(imp, descricao)
+
+            tipo_nome = 'interna' if tipo == self.TIPO_INTERNO else 'pública'
+            msg_sucesso = f'Ação {tipo_nome} enviada para o ticket Movidesk com sucesso.'
+            if arquivos:
+                msg_sucesso += f' ({len(arquivos)} anexo(s) enviado(s)).'
+                for arq in arquivos:
+                    print(f"arquivos enviados: {arq}")
+
+
+
+            messages.success(request, msg_sucesso)
+
         except ValueError as ve:
             messages.error(request, f'{ve}')
         except Exception as exc:
             messages.error(request, f'Erro ao enviar ação para o Movidesk: {exc}')
+
         return self._voltar(request, imp)
 
 
