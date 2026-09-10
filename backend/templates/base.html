@@ -281,10 +281,12 @@
         .form-readonly-visual {
             cursor: not-allowed;
         }
+
         [data-theme="light"] .form-readonly-visual {
             background: #f8fafc !important;
             color: #334155;
         }
+
         [data-theme="dark"] .form-readonly-visual {
             background: var(--sps-surface-2) !important;
             color: #cbd5e1;
@@ -1130,11 +1132,9 @@
         <!-- ===== SIDEBAR ===== -->
         <aside class="sps-sidebar" id="sidebar">
 
-            <div class="sps-sidebar__label">Principal</div>
-
             <a class="sps-nav-link {% block active_home %}{% endblock %}" href="{% url 'home' %}">
                 <i class="bi bi-speedometer2"></i>
-                Dashboard
+                Dashboard Geral
             </a>
 
             <div class="sps-sidebar__label">Implantação</div>
@@ -1156,7 +1156,7 @@
             </a>
 
             {% if modulos %}
-            <div class="sps-sidebar__label">Spartacus</div>
+            <div class="sps-sidebar__label">Módulos Spartacus</div>
 
             <button class="sps-nav-link collapsed" onclick="toggleCollapse('collapseModulos', this)">
                 <i class="bi bi-collection"></i>
@@ -1193,7 +1193,7 @@
             {% endif %}
 
             {% if modulos_web %}
-            <div class="sps-sidebar__label">SPS Web</div>
+            <div class="sps-sidebar__label">Módulos SPS Web</div>
 
             <button class="sps-nav-link collapsed" onclick="toggleCollapse('collapseWeb', this)">
                 <i class="bi bi-globe"></i>
@@ -1228,6 +1228,12 @@
                 {% endfor %}
             </div>
             {% endif %}
+
+            <div class="sps-sidebar__label">Tickets</div>
+            <a class="sps-nav-link" href="{% url 'tkts:painel_atrasados' %}">
+                <i class="bi bi-ticket-detailed"></i>
+                Resumo de Tkts
+            </a>
 
             <div class="sps-sidebar__label">Conta</div>
 
