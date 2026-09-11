@@ -36,6 +36,9 @@ class ImplantacaoModulo(models.Model):
         choices=StatusModulo.choices,
         default=StatusModulo.PENDENTE,
     )
+    inicio_previsto = models.DateField(null=True, blank=True)
+    fim_previsto = models.DateField(null=True, blank=True)
+    concluido_em = models.DateTimeField(null=True, blank=True)
     observacoes = models.TextField(blank=True)
 
     class Meta:

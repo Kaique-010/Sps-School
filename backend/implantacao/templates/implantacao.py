@@ -8,17 +8,23 @@ TEMPLATES = {
 
     "padrao": {
         "nome": "Implantação Padrão",
-        "descricao": "Implantação básica do sistema.",
+        "descricao": "Implantação básica do sistema com processo completo de onboarding.",
         "base": None,
 
         "etapas": [
             "diagnostico",
             "kickoff",
+            "pre_setup",
             "configuracao",
-            "migracao",
+            "treinamento_estoque",
+            "treinamento_compras",
+            "treinamento_vendas",
+            "treinamento_financeiro",
             "homologacao",
-            "treinamento",
             "go_live",
+            "checkpoint_30_dias",
+            "checkpoint_60_dias",
+            "checkpoint_90_dias",
             "acompanhamento",
         ],
 
@@ -36,7 +42,7 @@ TEMPLATES = {
 
     "medio": {
         "nome": "Implantação Média",
-        "descricao": "Implantação intermediária.",
+        "descricao": "Implantação intermediária com módulos adicionais.",
         "base": "padrao",
 
         "modulos": [

@@ -1,20 +1,24 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from django.contrib import messages
-from django.db.models import Count, Q
-from django.http import JsonResponse
+from django.db.models import Q
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
+from django.template.loader import render_to_string
 from django.views import View
 from django.views.generic import DetailView, ListView
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
+from django.utils import timezone
 
 from implantacao.models import (
     EtapaImplantacao,
     Implantacao,
     ImplantacaoModulo,
     StatusImplantacao,
+    TarefaImplantacao,
     Treinamento,
 )
 from implantacao.services.implantacao_service import ImplantacaoService
@@ -43,14 +47,12 @@ def _montar_pipeline_padrao(implantacao):
     )
     etapas_map = {e.nome: e for e in etapas_qs}
 
-    andamento_visto = False
     for nome in ETAPAS_PADRAO_NOMES:
         etapa = etapas_map.get(nome)
         if etapa and etapa.status == 'concluida':
             concluida, andamento = True, False
         elif etapa and etapa.status == 'em_andamento':
             concluida, andamento = False, True
-            andamento_visto = True
         elif etapa and etapa.status == 'bloqueada':
             concluida, andamento = False, False
         else:
@@ -58,9 +60,7 @@ def _montar_pipeline_padrao(implantacao):
 
         total_tarefas = etapa.tarefas.count() if etapa else 0
         concluidas_tarefas = etapa.tarefas.filter(concluida=True).count() if etapa else 0
-        if etapa and etapa.status == 'concluida':
-            texto = f'{concluidas_tarefas}/{total_tarefas} tarefas'
-        elif etapa and etapa.status == 'em_andamento':
+        if etapa and etapa.status in ('concluida', 'em_andamento'):
             texto = f'{concluidas_tarefas}/{total_tarefas} tarefas'
         else:
             texto = 'Aguardando etapas anteriores'
@@ -88,14 +88,8 @@ def _calcular_progresso_dados(implantacao, etapas_qs_list):
             etapa_atual = e.nome
             break
 
-    if total_etapas:
-        pct_etapas = (etapas_concluidas / total_etapas) * 60
-    else:
-        pct_etapas = 0
-    if total_tarefas:
-        pct_tarefas = (tarefas_concluidas / total_tarefas) * 40
-    else:
-        pct_tarefas = 0
+    pct_etapas = (etapas_concluidas / total_etapas) * 60 if total_etapas else 0
+    pct_tarefas = (tarefas_concluidas / total_tarefas) * 40 if total_tarefas else 0
     percentual = round(pct_etapas + pct_tarefas)
 
     if implantacao.status == StatusImplantacao.FINALIZADO:
@@ -136,19 +130,21 @@ class DashboardView(View):
             'cancelado': Implantacao.objects.filter(status=StatusImplantacao.CANCELADO).count(),
         }
 
-        ultimas_qs = Implantacao.objects.select_related('movidesk').order_by('-criado_em')[:8]
-        ultimas = list(ultimas_qs)
+        ultimas = list(
+            Implantacao.objects.select_related('movidesk').order_by('-criado_em')[:8]
+        )
 
-        etapas_pipeline = {}
         if ultimas:
             etapas_pipeline = _montar_pipeline_padrao(ultimas[0])
         else:
-            for nome in ETAPAS_PADRAO_NOMES:
-                etapas_pipeline[nome] = {
+            etapas_pipeline = {
+                nome: {
                     'concluida': False,
                     'andamento': False,
                     'texto': 'Aguardando primeira implantação',
                 }
+                for nome in ETAPAS_PADRAO_NOMES
+            }
 
         ultimas_com_progresso = []
         if ultimas:
@@ -162,10 +158,7 @@ class DashboardView(View):
                 etapa_map.setdefault(etapa.implantacao_id, []).append(etapa)
 
             for imp in ultimas:
-                progresso = _calcular_progresso_dados(
-                    imp,
-                    etapa_map.get(imp.pk, []),
-                )
+                progresso = _calcular_progresso_dados(imp, etapa_map.get(imp.pk, []))
                 ultimas_com_progresso.append((imp, progresso))
 
         ctx = {
@@ -254,10 +247,7 @@ class ImplantacaoIniciarView(View):
             return redirect('implantacao:implantacao_detail', pk=imp.pk)
         try:
             ImplantacaoService.iniciar(imp, implantador=implantador)
-            messages.success(
-                request,
-                f'Implantação iniciada com {imp.implantador}.',
-            )
+            messages.success(request, f'Implantação iniciada com {imp.implantador}.')
         except Exception as exc:
             messages.error(request, f'Não foi possível iniciar a implantação: {exc}')
         return redirect('implantacao:implantacao_detail', pk=imp.pk)
@@ -281,12 +271,129 @@ class ImplantacaoEtapaConcluirView(View):
     def post(self, request, pk, etapa_id):
         imp = get_object_or_404(Implantacao, pk=pk)
         etapa = get_object_or_404(EtapaImplantacao, pk=etapa_id, implantacao=imp)
+
+        tarefas_pendentes = etapa.tarefas.filter(obrigatoria=True, concluida=False)
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        if tarefas_pendentes.exists():
+            msg = (
+                f'Existem {tarefas_pendentes.count()} tarefas obrigatórias pendentes. '
+                'Conclua todas antes de prosseguir.'
+            )
+            if is_ajax:
+                return JsonResponse({'ok': False, 'erro': msg}, status=400)
+            messages.error(request, msg)
+            return redirect('implantacao:implantacao_detail', pk=imp.pk)
+
         try:
             WorkflowService.concluir_etapa(etapa)
+            if is_ajax:
+                return JsonResponse({
+                    'ok': True,
+                    'etapa_id': etapa.id,
+                    'mensagem': f'Etapa "{etapa.nome}" concluída com sucesso.',
+                })
             messages.success(request, f'Etapa "{etapa.nome}" concluída.')
+            return redirect('implantacao:implantacao_detail', pk=imp.pk)
         except Exception as exc:
+            if is_ajax:
+                return JsonResponse({'ok': False, 'erro': str(exc)}, status=400)
             messages.error(request, f'Não foi possível concluir a etapa: {exc}')
-        return redirect('implantacao:implantacao_detail', pk=imp.pk)
+            return redirect('implantacao:implantacao_detail', pk=imp.pk)
+
+
+@method_decorator(login_required, name='dispatch')
+class ImplantacaoTarefaConcluirView(View):
+    def post(self, request, pk, etapa_id, tarefa_id):
+        imp = get_object_or_404(Implantacao, pk=pk)
+        etapa = get_object_or_404(EtapaImplantacao, pk=etapa_id, implantacao=imp)
+        tarefa = get_object_or_404(TarefaImplantacao, pk=tarefa_id, etapa=etapa)
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        try:
+            if not tarefa.concluida:
+                tarefa.concluida = True
+                tarefa.concluida_em = timezone.now()
+                tarefa.save()
+
+            if is_ajax:
+                return JsonResponse({
+                    'ok': True,
+                    'tarefa_id': tarefa.id,
+                    'concluida': tarefa.concluida,
+                    'concluida_em': tarefa.concluida_em.strftime('%d/%m/%Y %H:%M') if tarefa.concluida_em else None,
+                })
+            messages.success(request, f'Tarefa "{tarefa.titulo}" concluída.')
+            return redirect('implantacao:implantacao_detail', pk=imp.pk)
+        except Exception as exc:
+            if is_ajax:
+                return JsonResponse({'ok': False, 'erro': str(exc)}, status=400)
+            messages.error(request, f'Não foi possível concluir a tarefa: {exc}')
+            return redirect('implantacao:implantacao_detail', pk=imp.pk)
+
+
+@method_decorator(login_required, name='dispatch')
+class ImplantacaoTelaConcluirView(View):
+    def post(self, request, pk, modulo_id, tela_id):
+        imp = get_object_or_404(Implantacao, pk=pk)
+        modulo = get_object_or_404(ImplantacaoModulo, pk=modulo_id, implantacao=imp)
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        try:
+            if tela_rel.status != 'concluida':
+                tela_rel.status = 'concluida'
+                tela_rel.concluida_em = timezone.now()
+                tela_rel.save()
+
+            if is_ajax:
+                return JsonResponse({
+                    'ok': True,
+                    'tela_id': tela_rel.id,
+                    'status': tela_rel.status,
+                    'concluida_em': tela_rel.concluida_em.strftime('%d/%m/%Y %H:%M') if tela_rel.concluida_em else None,
+                })
+            messages.success(request, f'Tela "{tela_rel.tela.nome}" concluída.')
+            return redirect('implantacao:implantacao_detail', pk=imp.pk)
+        except Exception as exc:
+            if is_ajax:
+                return JsonResponse({'ok': False, 'erro': str(exc)}, status=400)
+            messages.error(request, f'Não foi possível concluir a tela: {exc}')
+            return redirect('implantacao:implantacao_detail', pk=imp.pk)
+
+
+@method_decorator(login_required, name='dispatch')
+class ImplantacaoModuloConcluirView(View):
+    def post(self, request, pk, modulo_id):
+        imp = get_object_or_404(Implantacao, pk=pk)
+        modulo = get_object_or_404(ImplantacaoModulo, pk=modulo_id, implantacao=imp)
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        telas_pendentes = modulo.telas.filter(status__in=['pendente', 'em_andamento'])
+        if telas_pendentes.exists():
+            msg = f'Existem {telas_pendentes.count()} telas pendentes. Conclua todas antes de prosseguir.'
+            if is_ajax:
+                return JsonResponse({'ok': False, 'erro': msg}, status=400)
+            messages.error(request, msg)
+            return redirect('implantacao:implantacao_detail', pk=imp.pk)
+
+        try:
+            modulo.status = 'concluido'
+            modulo.concluido_em = timezone.now()
+            modulo.save()
+
+            if is_ajax:
+                return JsonResponse({
+                    'ok': True,
+                    'modulo_id': modulo.id,
+                    'mensagem': f'Módulo "{modulo.modulo.nome}" concluído com sucesso.',
+                })
+            messages.success(request, f'Módulo "{modulo.modulo.nome}" concluído.')
+            return redirect('implantacao:implantacao_detail', pk=imp.pk)
+        except Exception as exc:
+            if is_ajax:
+                return JsonResponse({'ok': False, 'erro': str(exc)}, status=400)
+            messages.error(request, f'Não foi possível concluir o módulo: {exc}')
+            return redirect('implantacao:implantacao_detail', pk=imp.pk)
 
 
 @method_decorator(login_required, name='dispatch')
@@ -347,9 +454,7 @@ class ImplantacaoEnviarAcaoView(View):
             'sem_origem': sem_origem,
             'origem': imp.movidesk if not sem_origem else None,
         }
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or (
-            request.GET.get('partial') == '1'
-        ):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.GET.get('partial') == '1':
             return render(request, 'partials/movidesk_acao_modal.html', data)
         return render(request, 'pages/movidesk_acao.html', data)
 
@@ -357,7 +462,7 @@ class ImplantacaoEnviarAcaoView(View):
         imp = get_object_or_404(Implantacao, pk=pk)
         tipo = (request.POST.get('tipo_acao') or '').strip().lower()
         descricao = (request.POST.get('descricao_acao') or '').strip()
-        arquivos = request.FILES.getlist('anexos')  # Captura anexos do formulário
+        arquivos = request.FILES.getlist('anexos')
 
         if tipo not in (self.TIPO_INTERNO, self.TIPO_PUBLICA):
             messages.error(request, 'Selecione o tipo da ação: Interna ou Pública.')
@@ -372,13 +477,8 @@ class ImplantacaoEnviarAcaoView(View):
                 MovideskSyncService,
             )
             sync = MovideskSyncService()
-            tipo_enum = (
-                sync.TIPO_ACAO_INTERNA
-                if tipo == self.TIPO_INTERNO
-                else sync.TIPO_ACAO_PUBLICA
-            )
+            tipo_enum = sync.TIPO_ACAO_INTERNA if tipo == self.TIPO_INTERNO else sync.TIPO_ACAO_PUBLICA
 
-            # Se houver arquivos anexados
             if arquivos:
                 sync.adicionar_acao_com_anexo(
                     implantacao=imp,
@@ -386,20 +486,15 @@ class ImplantacaoEnviarAcaoView(View):
                     arquivos=arquivos,
                     tipo=tipo_enum,
                 )
+            elif tipo == self.TIPO_INTERNO:
+                sync.adicionar_acao_interna(imp, descricao)
             else:
-                if tipo == self.TIPO_INTERNO:
-                    sync.adicionar_acao_interna(imp, descricao)
-                else:
-                    sync.adicionar_acao_publica(imp, descricao)
+                sync.adicionar_acao_publica(imp, descricao)
 
             tipo_nome = 'interna' if tipo == self.TIPO_INTERNO else 'pública'
             msg_sucesso = f'Ação {tipo_nome} enviada para o ticket Movidesk com sucesso.'
             if arquivos:
                 msg_sucesso += f' ({len(arquivos)} anexo(s) enviado(s)).'
-                for arq in arquivos:
-                    print(f"arquivos enviados: {arq}")
-
-
 
             messages.success(request, msg_sucesso)
 
@@ -452,14 +547,13 @@ def implantacao_nova(request):
             if movidesk_ticket_id and str(movidesk_ticket_id).isdigit():
                 try:
                     from implantacao.integrations.movidesk.client import MovideskClient
-                    from implantacao.integrations.movidesk.mapper import MovideskMapper
                     client = MovideskClient()
                     raw = client.obter_ticket(int(movidesk_ticket_id))
                     ImplantacaoService.registrar_origem(imp, int(movidesk_ticket_id), raw)
                 except Exception as e:
                     messages.warning(
                         request,
-                        f'Implantação #{imp.pk} criada, porém não foi possível registrar a origem Movidesk: {e}'
+                        f'Implantação #{imp.pk} criada, porém não foi possível registrar a origem Movidesk: {e}',
                     )
             messages.success(request, f'Implantação #{imp.pk} criada com sucesso.')
             return redirect('implantacao:implantacao_detail', pk=imp.pk)
@@ -467,9 +561,15 @@ def implantacao_nova(request):
             messages.error(request, f'Erro ao criar implantação: {exc}')
             return render(request, template_name, {'form_data': request.POST, 'templates': TEMPLATES})
 
-    templates_meta = {k: {'nome': v['nome'], 'modulos': list(v.get('modulos', [])),
-                          'etapas': list(v.get('etapas', [])), 'treinamentos': list(v.get('treinamentos', []))}
-                      for k, v in TEMPLATES.items()}
+    templates_meta = {
+        k: {
+            'nome': v['nome'],
+            'modulos': list(v.get('modulos', [])),
+            'etapas': list(v.get('etapas', [])),
+            'treinamentos': list(v.get('treinamentos', [])),
+        }
+        for k, v in TEMPLATES.items()
+    }
     return render(request, template_name, {'templates': TEMPLATES, 'templates_meta': templates_meta})
 
 
@@ -492,11 +592,135 @@ def movidesk_preview_ticket(request):
         ticket = client.obter_ticket(ticket_id)
         data = MovideskMapper.ticket_to_implantacao_data(ticket)
         data.pop('raw', None)
-        if 'data_implantacao' in data and data['data_implantacao'] is not None:
+        if data.get('data_implantacao') is not None:
             data['data_implantacao'] = data['data_implantacao'].isoformat()
-        if 'prazo_implementacao' in data and data['prazo_implementacao'] is not None:
+        if data.get('prazo_implementacao') is not None:
             data['prazo_implementacao'] = data['prazo_implementacao'].isoformat()
         data['modulos_sugeridos'] = list(data.get('modulos_sugeridos') or [])
-        return JsonResponse({'ok': True, 'dados': data})
     except Exception as exc:
-        return JsonResponse({'ok': False, 'erro': f'{exc}'}, status=502)
+        return JsonResponse({'ok': False, 'erro': str(exc)}, status=502)
+
+    return JsonResponse({'ok': True, 'dados': data})
+
+
+@login_required
+def editar_treinamentos(request, pk):
+    imp = get_object_or_404(Implantacao, pk=pk)
+    treinamentos = Treinamento.objects.filter(implantacao=imp)
+
+    if request.method == 'POST':
+        for t in treinamentos:
+            data_agendada = request.POST.get(f'treinamento_{t.id}')
+            responsavel = request.POST.get(f'responsavel_{t.id}', '').strip()
+            realizado = request.POST.get(f'realizado_{t.id}') == 'on'
+
+            if data_agendada:
+                try:
+                    t.data_agendada = datetime.fromisoformat(data_agendada)
+                except ValueError:
+                    pass
+
+            if responsavel:
+                t.responsavel = responsavel
+
+            t.realizado = realizado
+            t.save()
+
+        messages.success(request, 'Datas de treinamentos atualizadas com sucesso.')
+        return redirect('implantacao:implantacao_detail', pk=imp.pk)
+
+    return redirect('implantacao:implantacao_detail', pk=imp.pk)
+
+
+@login_required
+def editar_modulos(request, pk):
+    imp = get_object_or_404(Implantacao, pk=pk)
+    modulos = ImplantacaoModulo.objects.filter(implantacao=imp)
+
+    if request.method == 'POST':
+        for im in modulos:
+            inicio_previsto = request.POST.get(f'modulo_inicio_{im.id}')
+            fim_previsto = request.POST.get(f'modulo_fim_{im.id}')
+            concluido = request.POST.get(f'modulo_concluido_{im.id}') == 'on'
+
+            if inicio_previsto:
+                try:
+                    im.inicio_previsto = datetime.strptime(inicio_previsto, '%Y-%m-%d').date()
+                except ValueError:
+                    pass
+
+            if fim_previsto:
+                try:
+                    im.fim_previsto = datetime.strptime(fim_previsto, '%Y-%m-%d').date()
+                except ValueError:
+                    pass
+
+            if concluido:
+                im.status = 'concluido'
+                im.concluido_em = timezone.now()
+
+            im.save()
+
+        messages.success(request, 'Datas de módulos atualizadas com sucesso.')
+        return redirect('implantacao:implantacao_detail', pk=imp.pk)
+
+    return redirect('implantacao:implantacao_detail', pk=imp.pk)
+
+
+@login_required
+def kickoff_form(request, pk):
+    imp = get_object_or_404(Implantacao, pk=pk)
+
+    if request.method == 'POST':
+        data_kickoff = request.POST.get('data_kickoff')
+        participantes = request.POST.get('participantes', '').strip()
+        escopo = request.POST.get('escopo', '').strip()
+        responsaveis = request.POST.get('responsaveis', '').strip()
+        contador = request.POST.get('contador', '').strip()
+        importacao_dados = request.POST.get('importacao_dados', '').strip()
+        observacoes = request.POST.get('observacoes', '').strip()
+
+        kickoff_info = (
+            '\n=== FORMULÁRIO KICKOFF ===\n'
+            f'Data: {data_kickoff or "Não informada"}\n'
+            f'Participantes: {participantes or "Não informados"}\n'
+            f'Escopo: {escopo or "Não definido"}\n'
+            f'Responsáveis: {responsaveis or "Não definidos"}\n'
+            f'Contador: {contador or "Não informado"}\n'
+            f'Importação de Dados: {importacao_dados or "Não informado"}\n'
+            f'Observações: {observacoes or "Nenhuma"}\n'
+            '============================\n'
+        )
+
+        imp.observacoes = f'{imp.observacoes}\n\n{kickoff_info}' if imp.observacoes else kickoff_info
+        imp.save()
+
+        messages.success(request, 'Formulário de kickoff salvo com sucesso.')
+        return redirect('implantacao:implantacao_detail', pk=imp.pk)
+
+    return redirect('implantacao:implantacao_detail', pk=imp.pk)
+
+
+@login_required
+def gerar_pdf(request, pk):
+    imp = get_object_or_404(Implantacao, pk=pk)
+    etapas = EtapaImplantacao.objects.filter(implantacao=imp).prefetch_related('tarefas').order_by('ordem')
+
+    html_string = render_to_string('pages/implantacao_pdf.html', {
+        'imp': imp,
+        'etapas': etapas,
+    })
+
+    try:
+        import weasyprint
+        pdf_file = weasyprint.HTML(string=html_string).write_pdf()
+        response = HttpResponse(pdf_file, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="implantacao_{imp.id}_{imp.cliente}.pdf"'
+        return response
+    except ImportError:
+        # weasyprint não instalado: devolve o HTML para download/impressão
+        response = HttpResponse(html_string, content_type='text/html')
+        response['Content-Disposition'] = f'attachment; filename="implantacao_{imp.id}_{imp.cliente}.html"'
+        return response
+    except Exception as exc:
+        return JsonResponse({'ok': False, 'erro': f'Falha ao gerar PDF: {exc}'}, status=500)

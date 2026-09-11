@@ -21,7 +21,8 @@
         </div>
         <div class="col-md-4 text-md-end">
             {% with s=object.status %}
-            <span class="badge rounded-pill fs-6 p-2
+            <span
+                class="badge rounded-pill fs-6 p-2
                 {% if s == 'nao_iniciado' %}bg-secondary{% elif s == 'em_andamento' %}bg-info text-dark{% elif s == 'finalizado' %}bg-success{% else %}bg-danger{% endif %}">
                 {{ object.get_status_display }}
             </span>
@@ -46,20 +47,23 @@
                     <div class="display-5 mb-2">{{ progresso.percentual }}%</div>
                     <div class="progress mb-2" style="height: 10px;">
                         <div class="progress-bar bg-info" role="progressbar"
-                             style="width: {{ progresso.percentual }}%;"></div>
+                            style="width: {{ progresso.percentual }}%;"></div>
                     </div>
                     <div class="small text-muted">
                         Etapa atual: <strong style="color: var(--sps-text);">{{ progresso.etapa_atual }}</strong>
                     </div>
                     <div class="row mt-3 g-2 small">
                         <div class="col-6">
-                            <div class="p-2 rounded text-center" style="background: rgba(0,191,255,0.08); border: 1px solid rgba(0,191,255,0.18);">
-                                <div class="fw-semibold">{{ progresso.etapas.concluidas }}/{{ progresso.etapas.total }}</div>
+                            <div class="p-2 rounded text-center"
+                                style="background: rgba(0,191,255,0.08); border: 1px solid rgba(0,191,255,0.18);">
+                                <div class="fw-semibold">{{ progresso.etapas.concluidas }}/{{ progresso.etapas.total }}
+                                </div>
                                 <div class="text-muted">Etapas</div>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="p-2 rounded text-center" style="background: rgba(47,214,138,0.08); border: 1px solid rgba(47,214,138,0.18);">
+                            <div class="p-2 rounded text-center"
+                                style="background: rgba(47,214,138,0.08); border: 1px solid rgba(47,214,138,0.18);">
                                 <div class="fw-semibold">{{ progresso.tarefas.concluidas }}/{{ progresso.tarefas.total }}</div>
                                 <div class="text-muted">Tarefas</div>
                             </div>
@@ -92,12 +96,14 @@
                     <div class="small text-muted mb-2">Ações Rápidas</div>
                     <div class="d-flex flex-column gap-2">
                         {% if object.status == 'nao_iniciado' %}
-                        <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#modalIniciar">
+                        <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal"
+                            data-bs-target="#modalIniciar">
                             <i class="bi bi-play-fill me-1"></i>Iniciar Implantação
                         </button>
                         {% endif %}
                         {% if object.status != 'cancelado' and object.status != 'finalizado' %}
-                        <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal" data-bs-target="#modalCancelar">
+                        <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal"
+                            data-bs-target="#modalCancelar">
                             <i class="bi bi-x-circle me-1"></i>Cancelar Implantação
                         </button>
                         {% endif %}
@@ -125,11 +131,9 @@
                         {% for etapa in etapas %}
                         <div class="accordion-item">
                             <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" type="button"
-                                        data-bs-toggle="collapse"
-                                        data-bs-target="#etapa-{{ etapa.id }}"
-                                        aria-expanded="false"
-                                        aria-controls="etapa-{{ etapa.id }}">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#etapa-{{ etapa.id }}" aria-expanded="false"
+                                    aria-controls="etapa-{{ etapa.id }}">
                                     <div class="d-flex align-items-center w-100 me-3">
                                         <span class="me-2">
                                             {% if etapa.status == 'concluida' %}
@@ -143,14 +147,19 @@
                                             {% endif %}
                                         </span>
                                         <strong class="me-3">{{ etapa.nome }}</strong>
-                                        <span class="badge rounded-pill ms-auto
+                                        {% if etapa.nome == 'Kickoff' %}
+                                        <span class="badge bg-primary ms-2" style="font-size: 10px;">Importante</span>
+                                        {% endif %}
+                                        <span
+                                            class="badge rounded-pill ms-auto
                                             {% if etapa.status == 'concluida' %}bg-success{% elif etapa.status == 'em_andamento' %}bg-warning text-dark{% elif etapa.status == 'bloqueada' %}bg-danger{% else %}bg-secondary{% endif %}">
                                             {{ etapa.get_status_display }}
                                         </span>
                                     </div>
                                 </button>
                             </h2>
-                            <div id="etapa-{{ etapa.id }}" class="accordion-collapse collapse" data-bs-parent="#accordionEtapas">
+                            <div id="etapa-{{ etapa.id }}" class="accordion-collapse collapse"
+                                data-bs-parent="#accordionEtapas">
                                 <div class="accordion-body">
                                     <div class="d-flex justify-content-between align-items-center mb-3">
                                         <div class="small text-muted">
@@ -159,14 +168,21 @@
                                             Concluída: {{ etapa.concluida_em|date:"d/m/Y H:i"|default:"—" }}
                                         </div>
                                         {% if etapa.status == 'em_andamento' %}
-                                        <form method="post" action="{% url 'implantacao:implantacao_etapa_concluir' object.pk etapa.pk %}">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-sm btn-success">
-                                                <i class="bi bi-check-lg me-1"></i>Concluir Etapa
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn btn-sm btn-success btn-concluir-etapa"
+                                            data-etapa-id="{{ etapa.id }}" data-implantacao-id="{{ object.id }}"
+                                            {% if etapa.nome == 'Kickoff' %}data-is-kickoff="true"{% endif %}>
+                                            <i class="bi bi-check-lg me-1"></i>Concluir Etapa
+                                        </button>
                                         {% endif %}
                                     </div>
+                                    {% if etapa.nome == 'Kickoff' %}
+                                    <div class="alert alert-info mb-3">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        <strong>Kickoff:</strong> Esta etapa contém os passos iniciais essenciais para o
+                                        sucesso da implantação. Conclua todas as tarefas obrigatórias antes de
+                                        prosseguir.
+                                    </div>
+                                    {% endif %}
                                     <h6 class="small text-uppercase text-muted mb-2">Tarefas</h6>
                                     {% with tarefas=etapa.tarefas.all %}
                                     {% if tarefas %}
@@ -174,19 +190,22 @@
                                         {% for tarefa in tarefas %}
                                         <div class="list-group-item d-flex align-items-center px-0">
                                             <div class="form-check me-3 flex-shrink-0">
-                                                <input class="form-check-input" type="checkbox"
-                                                       id="tarefa-{{ tarefa.id }}"
-                                                       {% if tarefa.concluida %}checked disabled{% endif %}>
+                                                <input class="form-check-input tarefa-checkbox" type="checkbox"
+                                                    id="tarefa-{{ tarefa.id }}" data-tarefa-id="{{ tarefa.id }}"
+                                                    data-etapa-id="{{ etapa.id }}" data-implantacao-id="{{ object.id }}"
+                                                    {% if tarefa.concluida %}checked disabled{% endif %}>
                                                 <label class="form-check-label" for="tarefa-{{ tarefa.id }}"></label>
                                             </div>
-                                            <div class="flex-grow-1 {% if tarefa.concluida %}text-decoration-line-through text-muted{% endif %}">
+                                            <div
+                                                class="flex-grow-1 {% if tarefa.concluida %}text-decoration-line-through text-muted{% endif %}">
                                                 <div>{{ tarefa.titulo }}</div>
                                                 {% if tarefa.descricao %}
                                                 <div class="small text-muted">{{ tarefa.descricao }}</div>
                                                 {% endif %}
                                             </div>
                                             {% if tarefa.obrigatoria %}
-                                            <span class="badge bg-secondary ms-2" style="font-size: 10px;">Obrigatória</span>
+                                            <span class="badge bg-secondary ms-2"
+                                                style="font-size: 10px;">Obrigatória</span>
                                             {% endif %}
                                         </div>
                                         {% endfor %}
@@ -201,7 +220,8 @@
                         {% endfor %}
                     </div>
                     {% else %}
-                    <div class="text-center py-4 text-muted">Nenhuma etapa cadastrada. Inicie a implantação para gerar o fluxo.</div>
+                    <div class="text-center py-4 text-muted">Nenhuma etapa cadastrada. Inicie a implantação para gerar o
+                        fluxo.</div>
                     {% endif %}
                 </div>
             </div>
@@ -213,6 +233,10 @@
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-collection me-2"></i>Módulos</h5>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                        data-bs-target="#modalEditarModulos">
+                        <i class="bi bi-pencil me-1"></i>Editar Datas
+                    </button>
                 </div>
                 <div class="card-body">
                     {% if modulos %}
@@ -220,22 +244,41 @@
                     <div class="mb-3 border rounded p-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <strong>{{ im.modulo.nome }}</strong>
-                            <span class="badge rounded-pill
-                                {% if im.status == 'concluido' %}bg-success{% elif im.status == 'em_andamento' %}bg-info text-dark{% else %}bg-secondary{% endif %}">
-                                {{ im.get_status_display }}
-                            </span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span
+                                    class="badge rounded-pill
+                                    {% if im.status == 'concluido' %}bg-success{% elif im.status == 'em_andamento' %}bg-info text-dark{% else %}bg-secondary{% endif %}">
+                                    {{ im.get_status_display }}
+                                </span>
+                                {% if im.status != 'concluido' %}
+                                <button type="button" class="btn btn-sm btn-outline-success btn-concluir-modulo"
+                                    data-modulo-id="{{ im.id }}" data-implantacao-id="{{ object.id }}">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                                {% endif %}
+                            </div>
                         </div>
                         {% with telas=im.telas.all %}
                         {% if telas %}
                         <div class="small">
-                            <div class="text-muted mb-1">Telas:</div>
-                            <div class="d-flex flex-wrap gap-1">
+                            <div class="text-muted mb-2">Telas:</div>
+                            <div class="d-flex flex-column gap-2">
                                 {% for tela_rel in telas %}
-                                <span class="badge rounded-pill
-                                    {% if tela_rel.status == 'concluida' %}bg-success-subtle text-success{% elif tela_rel.status == 'em_andamento' %}bg-warning-subtle text-warning{% else %}bg-secondary-subtle text-secondary{% endif %}"
-                                      style="border: 1px solid currentColor; opacity: 0.85;">
-                                    {{ tela_rel.tela.nome }}
-                                </span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input tela-checkbox" type="checkbox"
+                                            id="tela-{{ tela_rel.id }}" data-tela-id="{{ tela_rel.id }}"
+                                            data-modulo-id="{{ im.id }}" data-implantacao-id="{{ object.id }}"
+                                            {% if tela_rel.status == 'concluida' %}checked disabled{% endif %}>
+                                        <label class="form-check-label" for="tela-{{ tela_rel.id }}"></label>
+                                    </div>
+                                    <span
+                                        class="badge rounded-pill flex-grow-1
+                                        {% if tela_rel.status == 'concluida' %}bg-success-subtle text-success{% elif tela_rel.status == 'em_andamento' %}bg-warning-subtle text-warning{% else %}bg-secondary-subtle text-secondary{% endif %}"
+                                        style="border: 1px solid currentColor; opacity: 0.85;">
+                                        {{ tela_rel.tela.nome }}
+                                    </span>
+                                </div>
                                 {% endfor %}
                             </div>
                         </div>
@@ -252,8 +295,12 @@
 
         <div class="col-md-5 mb-3">
             <div class="card h-100">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-play-circle me-2"></i>Treinamentos Agendados</h5>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                        data-bs-target="#modalEditarTreinamentos">
+                        <i class="bi bi-pencil me-1"></i>Editar Datas
+                    </button>
                 </div>
                 <div class="card-body">
                     {% if treinamentos %}
@@ -305,65 +352,525 @@
         </div>
     </div>
     {% endif %}
-</div>
 
-{% if object.status == 'nao_iniciado' %}
-<div class="modal fade" id="modalIniciar" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <form method="post" action="{% url 'implantacao:implantacao_iniciar' object.pk %}" class="modal-content">
-            {% csrf_token %}
-            <div class="modal-header">
-                <h5 class="modal-title">Iniciar Implantação</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Selecione ou informe o implantador responsável *</label>
-                    <input class="form-control" list="implantadoresList" name="implantador" required
-                           placeholder="Digite ou selecione um nome..."
-                           value="{{ object.implantador|default:'' }}">
-                    <datalist id="implantadoresList">
-                        {% for nome in implantadores_sugestao %}
-                        <option value="{{ nome }}"></option>
+    {% if object.status == 'nao_iniciado' %}
+    <div class="modal fade" id="modalIniciar" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <form method="post" action="{% url 'implantacao:implantacao_iniciar' object.pk %}" class="modal-content">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Iniciar Implantação</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Selecione ou informe o implantador responsável *</label>
+                        <input class="form-control" list="implantadoresList" name="implantador" required
+                            placeholder="Digite ou selecione um nome..." value="{{ object.implantador|default:'' }}">
+                        <datalist id="implantadoresList">
+                            {% for nome in implantadores_sugestao %}
+                            <option value="{{ nome }}"></option>
+                            {% endfor %}
+                        </datalist>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-play-fill me-1"></i>Iniciar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if object.status != 'cancelado' and object.status != 'finalizado' %}
+    <div class="modal fade" id="modalCancelar" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <form method="post" action="{% url 'implantacao:implantacao_cancelar' object.pk %}" class="modal-content">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Cancelar Implantação</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Motivo do cancelamento</label>
+                        <textarea class="form-control" name="motivo" rows="3"
+                            placeholder="Informe o motivo para cancelamento..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Voltar</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-x-circle me-1"></i>Confirmar Cancelamento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Modal Editar Treinamentos -->
+    <div class="modal fade" id="modalEditarTreinamentos" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <form method="post" action="{% url 'implantacao:editar_treinamentos' object.pk %}" class="modal-content">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Datas de Treinamentos</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    {% if treinamentos %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for t in treinamentos %}
+                        <div class="border rounded p-3">
+                            <div class="mb-2">
+                                <label class="form-label fw-semibold">{{ t.titulo }}</label>
+                                <input type="datetime-local" class="form-control" name="treinamento_{{ t.id }}"
+                                    value="{{ t.data_agendada|date:'Y-m-d\TH:i'|default:'' }}">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Responsável</label>
+                                <input type="text" class="form-control" name="responsavel_{{ t.id }}"
+                                    value="{{ t.responsavel|default:'' }}">
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="realizado_{{ t.id }}"
+                                    id="realizado_{{ t.id }}" {% if t.realizado %}checked{% endif %}>
+                                <label class="form-check-label" for="realizado_{{ t.id }}">Realizado</label>
+                            </div>
+                        </div>
                         {% endfor %}
-                    </datalist>
+                    </div>
+                    {% else %}
+                    <div class="text-muted">Nenhum treinamento agendado.</div>
+                    {% endif %}
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-play-fill me-1"></i>Iniciar
-                </button>
-            </div>
-        </form>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
-{% endif %}
 
-{% if object.status != 'cancelado' and object.status != 'finalizado' %}
-<div class="modal fade" id="modalCancelar" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <form method="post" action="{% url 'implantacao:implantacao_cancelar' object.pk %}" class="modal-content">
-            {% csrf_token %}
-            <div class="modal-header">
-                <h5 class="modal-title">Cancelar Implantação</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Motivo do cancelamento</label>
-                    <textarea class="form-control" name="motivo" rows="3"
-                              placeholder="Informe o motivo para cancelamento..."></textarea>
+    <!-- Modal Editar Módulos -->
+    <div class="modal fade" id="modalEditarModulos" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <form method="post" action="{% url 'implantacao:editar_modulos' object.pk %}" class="modal-content">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Datas de Módulos</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    {% if modulos %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for im in modulos %}
+                        <div class="border rounded p-3">
+                            <div class="mb-2">
+                                <label class="form-label fw-semibold">{{ im.modulo.nome }}</label>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Data Início</label>
+                                <input type="date" class="form-control" name="modulo_inicio_{{ im.id }}"
+                                    value="{{ im.inicio_previsto|date:'Y-m-d'|default:'' }}">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Data Fim Previsto</label>
+                                <input type="date" class="form-control" name="modulo_fim_{{ im.id }}"
+                                    value="{{ im.fim_previsto|date:'Y-m-d'|default:'' }}">
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="modulo_concluido_{{ im.id }}"
+                                    id="modulo_concluido_{{ im.id }}" {% if im.status == 'concluido' %}checked{% endif %}>
+                                <label class="form-check-label" for="modulo_concluido_{{ im.id }}">Concluído</label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-muted">Nenhum módulo associado.</div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Formulário Kickoff -->
+    <div class="modal fade" id="modalKickoff" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <form method="post" action="{% url 'implantacao:kickoff_form' object.pk %}" class="modal-content">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Formulário de Kickoff</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Preencha este formulário durante a reunião de kickoff com base no Questionário de Levantamento da
+                        Operação.
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Data da Reunião de Kickoff *</label>
+                        <input type="date" class="form-control" name="data_kickoff" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Participantes da Reunião</label>
+                        <textarea class="form-control" name="participantes" rows="2"
+                            placeholder="Liste os participantes do cliente e da equipe de implantação..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Escopo Definitivo da Implantação</label>
+                        <textarea class="form-control" name="escopo" rows="3"
+                            placeholder="Descreva o escopo final acordado..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Responsáveis por Área</label>
+                        <textarea class="form-control" name="responsaveis" rows="3"
+                            placeholder="Liste os responsáveis por cada módulo/área..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Contador Envolvido</label>
+                        <input type="text" class="form-control" name="contador"
+                            placeholder="Nome do contador/escritório...">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Necessidade de Importação de Dados</label>
+                        <select class="form-select" name="importacao_dados">
+                            <option value="">Selecione...</option>
+                            <option value="sim">Sim, há sistema anterior</option>
+                            <option value="nao">Não, todos dados serão digitados</option>
+                            <option value="parcial">Parcial (alguns dados serão importados)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Observações e Pendências</label>
+                        <textarea class="form-control" name="observacoes" rows="3"
+                            placeholder="Registre itens que ficaram &quot;a definir&quot; com responsáveis e prazos..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Formulário</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Ações adicionais -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
+                            data-bs-target="#modalKickoff">
+                            <i class="bi bi-clipboard-data me-1"></i>Preencher Formulário Kickoff
+                        </button>
+                        <a href="{% url 'implantacao:gerar_pdf' object.pk %}" class="btn btn-outline-success"
+                            target="_blank">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>Gerar PDF para Assinatura
+                        </a>
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Voltar</button>
-                <button type="submit" class="btn btn-danger">
-                    <i class="bi bi-x-circle me-1"></i>Confirmar Cancelamento
-                </button>
-            </div>
-        </form>
+        </div>
     </div>
 </div>
-{% endif %}
+
+<script>
+    (function () {
+        function csrfToken() {
+            const el = document.querySelector('[name=csrfmiddlewaretoken]');
+            return el ? el.value : '';
+        }
+
+        function mostrarAlertaSucesso(mensagem) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            alertDiv.style.cssText = 'top: 70px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                <i class="bi bi-check-circle-fill me-2"></i>
+                ${mensagem}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            setTimeout(() => alertDiv.parentNode && alertDiv.remove(), 3000);
+        }
+
+        function mostrarAlertaErro(mensagem) {
+            alert(mensagem);
+        }
+
+        // ----- Tarefas -----
+        function configurarTarefasCheckboxes() {
+            document.querySelectorAll('.tarefa-checkbox:not([data-tarefa-bound])').forEach(checkbox => {
+                checkbox.setAttribute('data-tarefa-bound', '1');
+
+                checkbox.addEventListener('change', function () {
+                    if (!this.checked) return;
+
+                    const tarefaId = this.getAttribute('data-tarefa-id');
+                    const etapaId = this.getAttribute('data-etapa-id');
+                    const implantacaoId = this.getAttribute('data-implantacao-id');
+                    this.disabled = true;
+
+                    const url = `/implantacao/${implantacaoId}/etapa/${etapaId}/tarefa/${tarefaId}/concluir/`;
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `csrfmiddlewaretoken=${csrfToken()}`,
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.ok) {
+                                this.checked = true;
+                                this.disabled = true;
+
+                                const textContainer = this.closest('.list-group-item').querySelector('.flex-grow-1');
+                                if (textContainer) {
+                                    textContainer.classList.add('text-decoration-line-through', 'text-muted');
+                                }
+
+                                atualizarBotaoConcluirEtapa(etapaId);
+                                mostrarAlertaSucesso('Tarefa concluída com sucesso!');
+                            } else {
+                                this.checked = false;
+                                this.disabled = false;
+                                mostrarAlertaErro('Erro ao concluir tarefa: ' + (data.erro || 'Erro desconhecido'));
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro:', error);
+                            this.checked = false;
+                            this.disabled = false;
+                            mostrarAlertaErro('Erro ao concluir tarefa. Tente novamente.');
+                        });
+                });
+            });
+        }
+
+        function verificarTarefasObrigatoriasConcluidas(etapaId) {
+            const etapaContainer = document.querySelector(`#etapa-${etapaId}`);
+            if (!etapaContainer) return false;
+
+            const checkboxesObrigatorios = Array.from(etapaContainer.querySelectorAll('.tarefa-checkbox'))
+                .filter(cb => {
+                    const item = cb.closest('.list-group-item');
+                    return item && item.querySelector('.badge');
+                });
+
+            if (checkboxesObrigatorios.length === 0) return true;
+            return checkboxesObrigatorios.every(cb => cb.checked && cb.disabled);
+        }
+
+        function atualizarBotaoConcluirEtapa(etapaId) {
+            const botao = document.querySelector(`.btn-concluir-etapa[data-etapa-id="${etapaId}"]`);
+            if (!botao) return;
+
+            const todasConcluidas = verificarTarefasObrigatoriasConcluidas(etapaId);
+            botao.disabled = !todasConcluidas;
+            botao.title = todasConcluidas ? '' : 'Conclua todas as tarefas obrigatórias antes de prosseguir';
+        }
+
+        function configurarBotoesConcluirEtapa() {
+            document.querySelectorAll('.btn-concluir-etapa:not([data-etapa-bound])').forEach(botao => {
+                botao.setAttribute('data-etapa-bound', '1');
+
+                const etapaId = botao.getAttribute('data-etapa-id');
+                const implantacaoId = botao.getAttribute('data-implantacao-id');
+
+                atualizarBotaoConcluirEtapa(etapaId);
+
+                botao.addEventListener('click', function () {
+                    if (!verificarTarefasObrigatoriasConcluidas(etapaId)) {
+                        mostrarAlertaErro('Conclua todas as tarefas obrigatórias antes de prosseguir.');
+                        return;
+                    }
+                    if (!confirm('Deseja realmente concluir esta etapa?')) return;
+
+                    const url = `/implantacao/${implantacaoId}/etapa/${etapaId}/concluir/`;
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `csrfmiddlewaretoken=${csrfToken()}`,
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.ok) {
+                                mostrarAlertaSucesso('Etapa concluída com sucesso!');
+                                setTimeout(() => location.reload(), 1500);
+                            } else {
+                                mostrarAlertaErro('Erro ao concluir etapa: ' + (data.erro || 'Erro desconhecido'));
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro:', error);
+                            mostrarAlertaErro('Erro ao concluir etapa. Tente novamente.');
+                        });
+                });
+            });
+        }
+
+        // ----- Telas -----
+        function configurarTelasCheckboxes() {
+            document.querySelectorAll('.tela-checkbox:not([data-tela-bound])').forEach(checkbox => {
+                checkbox.setAttribute('data-tela-bound', '1');
+
+                checkbox.addEventListener('change', function () {
+                    if (!this.checked) return;
+
+                    const telaId = this.getAttribute('data-tela-id');
+                    const moduloId = this.getAttribute('data-modulo-id');
+                    const implantacaoId = this.getAttribute('data-implantacao-id');
+                    this.disabled = true;
+
+                    const url = `/implantacao/${implantacaoId}/modulo/${moduloId}/tela/${telaId}/concluir/`;
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `csrfmiddlewaretoken=${csrfToken()}`,
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.ok) {
+                                this.checked = true;
+                                this.disabled = true;
+
+                                const badge = this.closest('.d-flex').querySelector('.badge');
+                                if (badge) {
+                                    badge.className = 'badge rounded-pill flex-grow-1 bg-success-subtle text-success';
+                                    badge.style.border = '1px solid currentColor';
+                                    badge.style.opacity = '0.85';
+                                }
+
+                                atualizarBotaoConcluirModulo(moduloId);
+                                mostrarAlertaSucesso('Tela concluída com sucesso!');
+                            } else {
+                                this.checked = false;
+                                this.disabled = false;
+                                mostrarAlertaErro('Erro ao concluir tela: ' + (data.erro || 'Erro desconhecido'));
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro:', error);
+                            this.checked = false;
+                            this.disabled = false;
+                            mostrarAlertaErro('Erro ao concluir tela. Tente novamente.');
+                        });
+                });
+            });
+        }
+
+        function verificarTelasConcluidas(moduloId) {
+            const ref = document.querySelector(`[data-modulo-id="${moduloId}"]`);
+            const moduloContainer = ref ? ref.closest('.border') : null;
+            if (!moduloContainer) return false;
+
+            return Array.from(moduloContainer.querySelectorAll('.tela-checkbox'))
+                .every(cb => cb.checked && cb.disabled);
+        }
+
+        function atualizarBotaoConcluirModulo(moduloId) {
+            const botao = document.querySelector(`.btn-concluir-modulo[data-modulo-id="${moduloId}"]`);
+            if (!botao) return;
+
+            const todasConcluidas = verificarTelasConcluidas(moduloId);
+            botao.disabled = !todasConcluidas;
+            botao.title = todasConcluidas ? '' : 'Conclua todas as telas antes de prosseguir';
+        }
+
+        function configurarBotoesConcluirModulo() {
+            document.querySelectorAll('.btn-concluir-modulo:not([data-modulo-bound])').forEach(botao => {
+                botao.setAttribute('data-modulo-bound', '1');
+
+                const moduloId = botao.getAttribute('data-modulo-id');
+                const implantacaoId = botao.getAttribute('data-implantacao-id');
+
+                atualizarBotaoConcluirModulo(moduloId);
+
+                botao.addEventListener('click', function () {
+                    if (!verificarTelasConcluidas(moduloId)) {
+                        mostrarAlertaErro('Conclua todas as telas antes de prosseguir.');
+                        return;
+                    }
+                    if (!confirm('Deseja realmente concluir este módulo?')) return;
+
+                    const url = `/implantacao/${implantacaoId}/modulo/${moduloId}/concluir/`;
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `csrfmiddlewaretoken=${csrfToken()}`,
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.ok) {
+                                mostrarAlertaSucesso('Módulo concluído com sucesso!');
+                                setTimeout(() => location.reload(), 1500);
+                            } else {
+                                mostrarAlertaErro('Erro ao concluir módulo: ' + (data.erro || 'Erro desconhecido'));
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro:', error);
+                            mostrarAlertaErro('Erro ao concluir módulo. Tente novamente.');
+                        });
+                });
+            });
+        }
+
+        function inicializar() {
+            configurarTarefasCheckboxes();
+            configurarBotoesConcluirEtapa();
+            configurarTelasCheckboxes();
+            configurarBotoesConcluirModulo();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', inicializar);
+        } else {
+            inicializar();
+        }
+
+        document.querySelectorAll('.accordion-button').forEach(button => {
+            button.addEventListener('shown.bs.collapse', function () {
+                setTimeout(() => {
+                    configurarTarefasCheckboxes();
+                    configurarBotoesConcluirEtapa();
+                }, 100);
+            });
+        });
+    })();
+</script>
 {% endblock %}

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Implantação #{{ imp.id }} - {{ imp.cliente }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .info { margin-bottom: 20px; }
+        .etapa { margin-bottom: 20px; page-break-inside: avoid; }
+        .etapa-nome { font-weight: bold; font-size: 16px; margin-bottom: 10px; }
+        .tarefa { margin-left: 20px; margin-bottom: 5px; }
+        .tarefa-concluida { text-decoration: line-through; color: #666; }
+        .footer { margin-top: 30px; text-align: center; font-size: 12px; }
+        .signature { margin-top: 50px; }
+        .signature-line { border-top: 1px solid #000; width: 300px; margin: 0 auto; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>TERMO DE IMPLANTAÇÃO</h1>
+        <h2>#{{ imp.id }} - {{ imp.cliente }}</h2>
+    </div>
+    
+    <div class="info">
+        <p><strong>Código Cliente:</strong> {{ imp.codigo_cliente }}</p>
+        <p><strong>Documento:</strong> {{ imp.documento_cliente }}</p>
+        <p><strong>Empresa/Filial:</strong> {{ imp.empresa }} / {{ imp.filial }}</p>
+        <p><strong>Implantador:</strong> {{ imp.implantador|default:"Não atribuído" }}</p>
+        <p><strong>Data Implantação:</strong> {{ imp.data_implantacao|date:"d/m/Y"|default:"Não definida" }}</p>
+        <p><strong>Prazo:</strong> {{ imp.prazo_implementacao|date:"d/m/Y"|default:"Não definido" }}</p>
+    </div>
+    
+    <h3>ETAPAS DA IMPLANTAÇÃO</h3>
+    
+    {% for etapa in etapas %}
+    <div class="etapa">
+        <div class="etapa-nome">{{ etapa.nome }} - {{ etapa.get_status_display }}</div>
+        <p><strong>Ordem:</strong> {{ etapa.ordem }} | 
+           <strong>Iniciada:</strong> {{ etapa.iniciada_em|date:"d/m/Y H:i"|default:"—" }} | 
+           <strong>Concluída:</strong> {{ etapa.concluida_em|date:"d/m/Y H:i"|default:"—" }}</p>
+        
+        {% with tarefas=etapa.tarefas.all %}
+        {% if tarefas %}
+        <div class="tarefas">
+            {% for tarefa in tarefas %}
+            <div class="tarefa {% if tarefa.concluida %}tarefa-concluida{% endif %}">
+                <input type="checkbox" {% if tarefa.concluida %}checked{% endif %} disabled>
+                {{ tarefa.titulo }} {% if tarefa.obrigatoria %}(Obrigatória){% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+    </div>
+    {% endfor %}
+    
+    <div class="footer">
+        <p>Este documento serve como registro formal do processo de implantação.</p>
+        <p>Gerado em: {% now "d/m/Y H:i" %}</p>
+    </div>
+    
+    <div class="signature">
+        <div class="signature-line"></div>
+        <p>Assinatura do Cliente</p>
+    </div>
+    
+    <div class="signature">
+        <div class="signature-line"></div>
+        <p>Assinatura do Responsável pela Implantação</p>
+    </div>
+</body>
+</html>
